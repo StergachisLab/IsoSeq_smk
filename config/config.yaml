@@ -1,0 +1,24 @@
+individuals:
+  UDN687128:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00468/hg38/results/pipelines/k-mer-variant-phasing/results/PS00468/hiphase/PS00468.vcf.gz
+    cyclo:
+        label: PS00555
+        path: 
+          - /mmfs1/gscratch/stergachislab/yhhc/projects/Iso-seq/Cyclo_noncyclo_comparison/Downsampling/UDN687128/Cyclo/UDN687128_cyclo_downsampled5000000_flnc.bam
+    non-cyclo:
+        label: PS00554
+        path: 
+          - /mmfs1/gscratch/stergachislab/yhhc/projects/Iso-seq/Cyclo_noncyclo_comparison/Downsampling/UDN687128/Noncyclo/UDN687128_noncyclo_downsampled5000000_flnc.bam
+  UDN052264:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00456/hg38/results/pipelines/k-mer-variant-phasing/results/PS00456/hiphase/PS00456.vcf.gz
+    cyclo:
+        label: PS00367
+        path: 
+          - /mmfs1/gscratch/stergachislab/data3/mas-iso-seq/genome-sciences/MAS_Ster1/Iso-Seq3_12106/call-refine/shard-5/execution/flnc.bam
+    non-cyclo:
+        label: PS00366
+        path: 
+          - /mmfs1/gscratch/stergachislab/data3/mas-iso-seq/genome-sciences/MAS_Ster1/Iso-Seq3_12106/call-refine/shard-4/execution/flnc.bam
+reference_genome: /gscratch/stergachislab/assemblies/simple-names/hg38.fa
+pigeon_annot: /gscratch/stergachislab/asedeno/data/reference_files/gencode.v45.annotation.gtf
+threads: 40
