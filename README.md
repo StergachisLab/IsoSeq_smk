@@ -1,6 +1,6 @@
-# Iso-seq processing pipeline
+# MAS-Seq processing pipeline
 
-This is a pipeline designed to process Iso-Seq data from PacBio HiFi reads.
+This is a pipeline designed to process MAS-Seq data PacBio. 
 
 ## Usage
 
