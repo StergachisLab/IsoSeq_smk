@@ -1,78 +1,200 @@
-# Import necessary libraries
+import os
 import yaml
-from os import path
 
-# Load the configuration file
 configfile: 'config.yaml'
-wildcard_constraints: 
-    individual = "|".join(config["individuals"]),
-    conditions = "cyclo|non-cyclo",
-    label = "PS\d+"
 
-# get list of individuals on yml where vcf file is present
-vcf_present =[]
 
+labels = []
 for individual in config['individuals']:
-    if not "deepvariant_vcf" in config['individuals'][individual]:
-        continue
-    file=config['individuals'][individual]["deepvariant_vcf"]
-    if os.path.exists(file):
-        vcf_present.append(individual)    
+    for condition in ["treated", "untreated"]:
+        for label in config['individuals'][individual][condition]:
+            labels.append(label)
 
-# Function to dynamically generate input paths for merging by condition
-def get_sample_paths(individual, condition):
-    print(individual, condition)
-    x = config['individuals'][individual][condition]
-    print(x)
-    return config['individuals'][individual][condition]["path"]
 
-# function to create sample label PS
-def get_sample_labels_ind(individual, condition):
-    return config['individuals'][individual][condition]["label"]
+# Global wildcard constraints
+wildcard_constraints:
+    individual = "|".join(config["individuals"]),
+    condition = "treated|untreated",
+    label = "|".join(labels),
 
-# function to combine samples from conditions cyclo/non-cyclo
+
+
+def has_vcf(wc):
+    return "deepvariant_vcf" in config["individuals"][wc.individual]
+
+def get_mod_phased_vcf(wc):
+    phased_vcf = f"mod_vcf/{individual}_mod.vcf.gz"
+    if not has_vcf(wc):
+        return f"mod_vcf/fake_{individual}_mod.vcf.gz"
+    return phased_vcf
+
+def get_merge_input(wc):
+    return config["individuals"][wc.individual][wc.condition][wc.label]
+
+# Function to combine samples from conditions [treated/untreated]
 def combine_labels(wildcards):
     individual = wildcards.individual
     rtn = []
-    for condition in ["cyclo", "non-cyclo"]: 
-        label = config["individuals"][individual][condition]["label"]
-        file = f"merged/{label}_{individual}_{condition}_labeled.bam"
-        rtn.append(file)
+    for condition in ["treated", "untreated"]:
+        for label in config["individuals"][individual][condition]:
+            file = f"merged/{individual}_{condition}_{label}_labeled.bam"
+            rtn.append(file)
     return rtn
+
+
+def whatshap_outs(wc):
+    template_f_path = "whatshap/{individual}_{condition}_{label}.list.txt"
+    rtn = []
+    for individual in config['individuals']:
+        for condition in ["treated", "untreated"]:
+            for label in config['individuals'][individual][condition]:
+                rtn.append(template_f_path.format(
+                    individual=individual,
+                    condition=condition,
+                    label=label
+                ))
+    return rtn 
 
 rule all:
     input:
         "pigeon/saturation.txt",
-        expand("whatshap/{individual}.list.txt",individual=vcf_present)
+        whatshap_outs
 
-# Rule to merge samples within each condition for an individual
+
 rule merge_individual_condition:
     conda:
         "envs/env.yml"
     input:
-        lambda wildcards: get_sample_paths(wildcards.individual, wildcards.condition)
+        get_merge_input
     output:
-        "merged/{label}_{individual}_{condition}_merged.bam"
+        bam = "merged/{individual}_{condition}_{label}_merged.bam"
     threads: config.get("threads", 40)
     shell:
-        "samtools merge -@ {threads} {output} {input}"
+        "samtools merge -@ {threads} {output.bam} {input}"
 
 rule label_reads_with_condition:
     conda:
         "envs/env.yml"
     input:
-        "merged/{label}_{individual}_{condition}_merged.bam"
+        bam = "merged/{individual}_{condition}_{label}_merged.bam"
     output:
-        bam = "merged/{label}_{individual}_{condition}_labeled.bam", 
-        header = temp("{label}_{individual}_{condition}_header.sam")
-    #params:
-    #    label=lambda wildcards: wildcards.condition  # Directly use the condition name
+        bam = "merged/{individual}_{condition}_{label}_labeled.bam",
+        header = temp("{individual}_{condition}_{label}_header.sam")
+    shell:
+        r"""
+        samtools view -H {input.bam} > {output.header}
+        (samtools view {input.bam} | \
+        awk -v label="{wildcards.label}" 'BEGIN {{OFS="\t"}} {{print label"_"$0}}') | \
+        samtools view -bS -T {output.header} > {output.bam}
+        samtools index -@ {threads} {output.bam}
+        """
+
+rule align_sample:
+    conda:
+        "envs/env.yml"
+    input:
+        bam = "merged/{individual}_{condition}_{label}_labeled.bam"
+    output:
+        aligned = "aligned/{individual}_{condition}_{label}_aligned.bam"
+    threads: config.get("threads", 40)
     shell:
         """
-        samtools view -H {input} > {output.header}
-        samtools view {input} | \
-        awk -v label="{wildcards.label}" 'BEGIN {{OFS="\\t"}} !/^@/ {{print label"_"$1, $0}} /^@/ {{print}}' | \
-        cat {output.header} - | samtools view -bS > {output.bam}
+        pbmm2 align {config[reference_genome]} {input.bam} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
+        """
+
+rule modify_rg:
+    conda:
+        "envs/env.yml"
+    input:
+        bam = "aligned/{individual}_{condition}_{label}_aligned.bam"
+    output:
+        bam = "aligned/{individual}_{condition}_{label}_modified_aligned.bam",
+        bai = "aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai"
+    shell:
+        """
+        samtools addreplacerg -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' -o {output.bam} {input.bam}
+        samtools index {output.bam}
+        """
+
+
+rule modify_vcf:
+    conda:
+        "envs/env.yml"
+    input:
+        vcf = lambda wildcards: config['individuals'][wildcards.individual]['deepvariant_vcf']
+    output:
+        mod_vcf = "mod_vcf/{individual}_mod.vcf.gz",
+        mod_vcf_tbi = "mod_vcf/{individual}_mod.vcf.gz.tbi"
+    shell:
+        r"""
+        if [[ "{input.vcf}" =~ \.gz$ ]]; then
+            zcat {input.vcf}
+        else
+            cat {input.vcf}
+        fi | \
+        bcftools view | \
+        awk 'BEGIN {{FS=OFS="\t"}} /^#CHROM/ {{$10="UnnamedSample"; print; next}} {{print}}' | \
+        bgzip -c > {output.mod_vcf} && \
+        tabix -p vcf {output.mod_vcf}
+        """
+
+rule fake_vcf:
+    conda:
+        "envs/env.yml"
+    output:
+        temp("mod_vcf/fake_{individual}_mod.vcf.gz"),
+    shell:
+        """
+        touch {output}
+        """
+        
+
+rule whatshap_stats:
+    conda:
+        "envs/env.yml"
+    input:
+        phased_vcf = "mod_vcf/{individual}_mod.vcf.gz"
+    output:
+        tsv = "whatshap/{individual}.phased_stats.tsv",
+        block_list = "whatshap/{individual}.phased.blocks.txt",
+        gtf = "whatshap/{individual}.phased.blocks.gtf"
+    shell:
+        """
+        whatshap stats --tsv {output.tsv} --block-list {output.block_list} --gtf {output.gtf} {input.phased_vcf}
+        """
+
+rule whatshap_haplotag:
+    conda:
+        "envs/env.yml"
+    input:
+        phased_vcf_gz = get_mod_phased_vcf,
+        bam = "aligned/{individual}_{condition}_{label}_modified_aligned.bam",
+        reference = config['reference_genome']
+    output:
+        haplotagged_bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam",
+        list_txt = "whatshap/{individual}_{condition}_{label}.list.txt"
+    params:
+        has_vcf = lambda wc: "true" if has_vcf(wc) else "false"
+    shell:
+        """
+        if [ {params.has_vcf} == "true" ]; then
+            whatshap haplotag {input.phased_vcf_gz} {input.bam} -o {output.haplotagged_bam} --reference {input.reference} --output-haplotag-list {output.list_txt}
+        else
+            # add back fake haplotpag script
+            ./scripts/add_hp0.sh {input.bam} {output.haplotagged_bam}  
+        fi
+        """
+
+rule extract_read_info:
+    conda:
+        "envs/env.yml"
+    input:
+        bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam"
+    output:
+        txt = "whatshap/{individual}_{condition}_{label}.txt"
+    shell:
+        """
+        ./scripts/extract_read_info.py {input.bam}
         """
 
 rule merge_samples:
@@ -97,7 +219,7 @@ rule cluster:
         bam = "merged/{individual}_all_conditions_merged.bam",
         bai = "merged/{individual}_all_conditions_merged.bam.bai"
     output:
-        clustered="clustered/{individual}_clustered.bam"
+        clustered = "clustered/{individual}_clustered.bam"
     threads: config.get("threads", 40)
     resources: 
         runtime = 60*24
@@ -128,8 +250,9 @@ rule label_transcripts:
     shell:
         """
         samtools view -H {input} > {output.header}
-        samtools view {input} | awk -v label={wildcards.individual} '{{print label"_"$$0}}' | cat {output.header} - | samtools view -bS > {output.bam}
+        samtools view {input} | awk -v label="{wildcards.individual}" '{{print label"_"$$0}}' | cat {output.header} - | samtools view -bS > {output.bam}
         """
+
 
 rule merge_all_aligned:
     conda:
@@ -143,52 +266,6 @@ rule merge_all_aligned:
         samtools merge -@ 40 {output} {input}
         samtools index {output}
         """
-
-rule modify_vcf:
-    conda:
-        "envs/env.yml"
-    input:
-        vcf=lambda wildcards: config['individuals'][wildcards.individual]['deepvariant_vcf']
-    output:
-        mod_vcf="mod_vcf/{individual}_mod.vcf.gz",
-        mod_vcf_tbi="mod_vcf/{individual}_mod.vcf.gz.tbi"
-    shell:
-        """
-        if [[ "{input.vcf}" =~ \.gz$ ]]; then
-            zcat {input.vcf}
-        else
-            cat {input.vcf}
-        fi | \
-        bcftools view | \
-        awk 'BEGIN {{FS=OFS="\t"}} /^#CHROM/ {{$$10="UnnamedSample"; print; next}} {{print}}' | \
-        bgzip -c > {output.mod_vcf} && \
-        tabix -p vcf {output.mod_vcf}
-        """
-
-rule whatshap_stats:
-    conda:
-        "envs/env.yml"
-    input:
-        phased_vcf="mod_vcf/{individual}_mod.vcf.gz"
-    output:
-        tsv="whatshap/{individual}.phased_stats.tsv",
-        block_list="whatshap/{individual}.phased.blocks.txt",
-        gtf="whatshap/{individual}.phased.blocks.gtf"
-    shell:
-        "whatshap stats --tsv {output.tsv} --block-list {output.block_list} --gtf {output.gtf} {input.phased_vcf}"
-
-rule whatshap_haplotag:
-    conda:
-        "envs/env.yml"
-    input:
-        phased_vcf_gz="mod_vcf/{individual}_mod.vcf.gz",
-        bam="aligned/{individual}_aligned_labeled.bam",
-        reference=config['reference_genome']
-    output:
-        haplotagged_bam="whatshap/{individual}.haplotagged.bam",
-        list_txt="whatshap/{individual}.list.txt"
-    shell:
-        "whatshap haplotag {input.phased_vcf_gz} {input.bam} -o {output.haplotagged_bam} --reference {input.reference} --output-haplotag-list {output.list_txt}"
 
 rule collapse:
     conda:
