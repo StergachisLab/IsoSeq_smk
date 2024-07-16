@@ -1,6 +1,10 @@
 # MAS-Seq processing pipeline
 
-This is a pipeline designed to process MAS-Seq data PacBio. 
+This is a pipeline designed to process MAS-Seq data from PacBio. The pipeline allows to combine different samples (PS0001, PS0002) within a condition (treated/untreated) per individual. 
+Multiple individuals can be defined for a combined analysis. 
+
+The pipeline takes flnc.bam files as input. We haplotag this flnc bam individually. Ideally, a phased vcf should be provided, but if no phased vcf is available, an artificial HP:i:0 tag will be assigned to the annotations. 
+
 
 ## Usage
 
