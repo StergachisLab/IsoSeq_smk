@@ -96,7 +96,7 @@ rule align_sample:
         bam = "merged/{individual}_{condition}_{label}_labeled.bam"
     output:
         aligned = "aligned/{individual}_{condition}_{label}_aligned.bam"
-    threads: config.get("threads", 40)
+    threads: 8
     shell:
         """
         pbmm2 align {config[reference_genome]} {input.bam} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
@@ -194,10 +194,10 @@ rule extract_read_info:
     input:
         bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam"
     output:
-        txt = "whatshap/{individual}_{condition}_{label}.txt"
+        txt = "whatshap/{individual}_{condition}_{label}.haplotagged.txt"
     shell:
         """
-        ./scripts/extract_read_info.py {input.bam}
+        ./scripts/extract_read_info.py {input.bam} {output.txt}
         """
 
 rule merge_samples:
@@ -236,7 +236,7 @@ rule align:
         "clustered/{individual}_clustered.bam"
     output:
         aligned="aligned/{individual}_aligned.bam"
-    threads: config.get("threads", 40)
+    threads: 8
     shell:
         "pbmm2 align {config[reference_genome]} {input} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO"
 
@@ -297,4 +297,32 @@ rule pigeon_process:
         pigeon classify pigeon/sorted.gff {params.pigeon_annot} {config[reference_genome]} --flnc collapse/collapsed.flnc_count.txt -d pigeon -o 'pigeon'
         pigeon filter pigeon/pigeon_classification.txt
         pigeon report pigeon/pigeon_classification.filtered_lite_classification.txt {output.report}
+        """
+
+rule create_dictionary:
+    conda:
+        "envs/r-base.yml"
+    input:
+        collapsed="collapse/collapsed.read_stat.txt",
+        haplotag=lambda wildcards: glob.glob("whatshap/{}_{}_*.txt".format(wildcards.individual, wildcards.condition)),
+        classification="pigeon/pigeon_classification.txt"
+    output:
+        dictionary="tag/dictionary_all.txt"
+    shell:
+        """
+        Rscript ./scripts/create_dictionary.R {input.collapsed} {input.haplotag} {input.classification}
+        """
+
+rule add_tags_to_bam:
+    conda:
+        "envs/env.yml"
+    input:
+        bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
+        dictionary="tag/dictionary_all.txt"
+    output:
+        bam="whatshap/{individual}_{condition}_{label}.tagged.bam",
+        bai="whatshap/{individual}_{condition}_{label}.tagged.bam.bai"
+    shell:
+        """
+        ./scripts/add_tags_to_bam.sh {input.bam} {input.dictionary} {output.bam}
         """
