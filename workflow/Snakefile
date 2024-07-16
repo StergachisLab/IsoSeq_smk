@@ -1,7 +1,7 @@
 import os
 import yaml
 
-configfile: 'config.yaml'
+configfile: 'config/config.yaml'
 
 
 labels = []
