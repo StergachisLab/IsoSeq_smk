@@ -18,7 +18,6 @@ wildcard_constraints:
     label = "|".join(labels),
 
 
-
 def has_vcf(wc):
     return "deepvariant_vcf" in config["individuals"][wc.individual]
 
@@ -78,16 +77,17 @@ rule label_reads_with_condition:
     input:
         bam = "merged/{individual}_{condition}_{label}_merged.bam"
     output:
-        bam = "merged/{individual}_{condition}_{label}_labeled.bam",
-        header = temp("{individual}_{condition}_{label}_header.sam")
+        bam = "merged/{individual}_{condition}_{label}_labeled.bam"
+    threads: config.get("threads", 40)
+    resources:
+        mem_mb=8000
     shell:
         r"""
-        samtools view -H {input.bam} > {output.header}
-        (samtools view {input.bam} | \
-        awk -v label="{wildcards.label}" 'BEGIN {{OFS="\t"}} {{print label"_"$0}}') | \
-        samtools view -bS -T {output.header} > {output.bam}
-        samtools index -@ {threads} {output.bam}
+        samtools view -@ {threads} -h {input.bam} | \
+        awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}' | \
+        samtools view -bS - > {output.bam}
         """
+
 
 rule align_sample:
     conda:
@@ -125,6 +125,7 @@ rule modify_vcf:
     output:
         mod_vcf = "mod_vcf/{individual}_mod.vcf.gz",
         mod_vcf_tbi = "mod_vcf/{individual}_mod.vcf.gz.tbi"
+    threads: config.get("threads", 40)    
     shell:
         r"""
         if [[ "{input.vcf}" =~ \.gz$ ]]; then
@@ -134,7 +135,7 @@ rule modify_vcf:
         fi | \
         bcftools view | \
         awk 'BEGIN {{FS=OFS="\t"}} /^#CHROM/ {{$10="UnnamedSample"; print; next}} {{print}}' | \
-        bgzip -c > {output.mod_vcf} && \
+        bgzip -@ {threads} -c > {output.mod_vcf} && \
         tabix -p vcf {output.mod_vcf}
         """
 
@@ -158,9 +159,10 @@ rule whatshap_stats:
         tsv = "whatshap/{individual}.phased_stats.tsv",
         block_list = "whatshap/{individual}.phased.blocks.txt",
         gtf = "whatshap/{individual}.phased.blocks.gtf"
+    threads: config.get("threads", 40)
     shell:
         """
-        whatshap stats --tsv {output.tsv} --block-list {output.block_list} --gtf {output.gtf} {input.phased_vcf}
+        whatshap stats --threads {threads} --tsv {output.tsv} --block-list {output.block_list} --gtf {output.gtf} {input.phased_vcf}
         """
 
 rule whatshap_haplotag:
@@ -175,10 +177,11 @@ rule whatshap_haplotag:
         list_txt = "whatshap/{individual}_{condition}_{label}.list.txt"
     params:
         has_vcf = lambda wc: "true" if has_vcf(wc) else "false"
+    threads: config.get("threads", 40)
     shell:
         """
         if [ {params.has_vcf} == "true" ]; then
-            whatshap haplotag {input.phased_vcf_gz} {input.bam} -o {output.haplotagged_bam} --reference {input.reference} --output-haplotag-list {output.list_txt}
+            whatshap haplotag -t {threads} {input.phased_vcf_gz} {input.bam} -o {output.haplotagged_bam} --reference {input.reference} --output-haplotag-list {output.list_txt}
         else
             # add back fake haplotpag script
             ./scripts/add_hp0.sh {input.bam} {output.haplotagged_bam}  
@@ -235,7 +238,7 @@ rule align:
         aligned="aligned/{individual}_aligned.bam"
     threads: config.get("threads", 40)
     shell:
-        "pbmm2 align {config[reference_genome]} {input} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 40G --log-level INFO"
+        "pbmm2 align {config[reference_genome]} {input} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO"
 
 rule label_transcripts:
     conda:
@@ -245,12 +248,12 @@ rule label_transcripts:
     output:
         bam = "aligned/{individual}_aligned_labeled.bam",
         header = temp("{individual}_aligned_header.sam")
-    #params:
-    #    individual_label=lambda wildcards: config['individuals'][wildcards.individual]['label']
+    threads: config.get("threads", 40)
     shell:
-        """
-        samtools view -H {input} > {output.header}
-        samtools view {input} | awk -v label="{wildcards.individual}" '{{print label"_"$$0}}' | cat {output.header} - | samtools view -bS > {output.bam}
+        r"""
+        (samtools view -@ {threads} -H {input.bam} && \
+        samtools view -@ {threads} {input.bam} | awk -v id={wildcards.individual} 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}') | \
+        samtools view -@ {threads} -bS - > {output.bam}
         """
 
 
@@ -261,9 +264,10 @@ rule merge_all_aligned:
         lambda wildcards: expand("aligned/{individual}_aligned_labeled.bam", individual=config['individuals'].keys())
     output:
         "aligned/all_individuals_aligned_merged.bam"
+    threads: config.get("threads", 40)
     shell:
         """
-        samtools merge -@ 40 {output} {input}
+        samtools merge -@ {threads} {output} {input}
         samtools index {output}
         """
 
@@ -274,8 +278,9 @@ rule collapse:
         "aligned/all_individuals_aligned_merged.bam"
     output:
         collapsed_gff="collapse/collapsed.gff"
+    threads: config.get("threads", 40)
     shell:
-        "isoseq3 collapse {input} {output.collapsed_gff} --verbose"
+        "isoseq3 collapse --num-threads {threads} {input} {output.collapsed_gff} --verbose"
 
 rule pigeon_process:
     conda:
