@@ -1,16 +1,13 @@
 #!/usr/bin/env python
-"""extract_read_info.py: Extract read quality, read length and haplotype from haplotagged bam file."""
-__author__      = "Adriana Sedeno"
+"""extract_read_info.py: Extract read quality, read length, and haplotype from haplotagged bam file."""
+__author__ = "Adriana Sedeno"
 
 import sys
 import pysam
 import os
 
-def process_bam(bam_file):
+def process_bam(bam_file, output_file):
     bam = pysam.AlignmentFile(bam_file, "rb")
-    
-    base_name = os.path.splitext(bam_file)[0]
-    output_file = base_name + ".txt"
     
     with open(output_file, 'w') as out:
         out.write("ReadName\tReadQuality\tReadLength\tHaplotype\n")
@@ -28,10 +25,10 @@ def process_bam(bam_file):
     print(f"Output written to {output_file}")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <input.bam>")
+    if len(sys.argv) != 3:
+        print("Usage: python script.py <input.bam> <output.txt>")
         sys.exit(1)
 
     bam_file = sys.argv[1]
-    process_bam(bam_file)
-
+    output_file = sys.argv[2]
+    process_bam(bam_file, output_file)
