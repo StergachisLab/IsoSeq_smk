@@ -17,9 +17,8 @@ process_collapsed <- function(filepath) {
 }
 
 # Function to read and process haplotag files
-process_haplotag <- function(directory) {
-  haplotag_files <- list.files(directory, pattern = "haplotagged.txt", full.names = TRUE)
-  haplotag_data <- haplotag_files %>%
+process_haplotag <- function(files) {
+  haplotag_data <- files %>%
     set_names() %>%
     purrr::map_dfr(
       ~ data.table::fread(.x, header = TRUE, stringsAsFactors = FALSE, check.names = TRUE) %>% 
@@ -46,15 +45,37 @@ create_dictionary <- function(collapsed_file, haplotag_files, classification_fil
   
   dictionary <- collapsed_data %>%
     dplyr::left_join(classification_data) %>%
-    dplyr::left_join(haplotag_data, by = join_by("read_id" == "Readname")) %>%
-    dplyr::mutate(isoform = gsub("PB.", "in:Z:", isoform),
-           structural_category = paste0("sc:Z:",structural_category),
-           associated_gene = paste0("gn:Z:", associated_gene),
-           associated_transcript = paste0("tn:Z:", associated_transcript),
-           subcategory = paste0("sb:Z:", subcategory)) %>%
+    dplyr::left_join(haplotag_data, by = join_by("read_id" == "Readname")) 
+  
+counts_hap <- dictionary %>%
+  group_by(isoform, condition, haplotype) %>%
+  count() %>%
+  mutate(n_hap_cond = n) %>%
+  select(-n) %>%
+  pivot_wider(id_cols = c(isoform,Haplotype), names_from = c(condition), values_from = n_hap_cond) %>%
+  mutate(iso_hap_noncyclo_counts = paste0("hn:i:", `non-cyclo`),
+         iso_hap_cyclo_counts = paste0("hc:i:", cyclo)) %>%
+  select(-cyclo, -`non-cyclo`)
+
+counts <- dictionary %>%
+  group_by(isoform, condition) %>%
+  count() %>%
+  mutate(n_cond = n) %>%
+  select(-n) %>%
+  pivot_wider(isoform, names_from = condition, values_from = n_cond) %>%
+  mutate(iso_noncyclo_counts = paste0("sn:i:", `non-cyclo`),
+         iso_cyclo_counts = paste0("sc:i:", cyclo)) %>%
+  select(-cyclo, -`non-cyclo`)
+
+dictionary <- left_join(dictionary, counts_hap) %>%
+  left_join(counts) %>%
+  mutate(isoform = gsub("PB.", "in:Z:", isoform),
+         structural_category = paste0("sc:Z:",structural_category),
+         associated_gene = paste0("gn:Z:", associated_gene),
+         associated_transcript = paste0("tn:Z:", associated_transcript),
+         subcategory = paste0("sb:Z:", subcategory)) %>%
     distinct(.) %>%
     dplyr::select(read_id, haplotype, isoform, structural_category, associated_gene, associated_transcript, subcategory)
-  
   
   # Write the dictionary to a file
   dir.create("tag")
@@ -64,8 +85,8 @@ create_dictionary <- function(collapsed_file, haplotag_files, classification_fil
 # Parse command-line arguments
 args <- commandArgs(trailingOnly = TRUE)
 collapsed_file <- args[1]
-haplotag_dir <- args[2]
+haplotag_files <- args[2]
 classification_file <- args[3]
 
 # Call the main function
-create_dictionary(collapsed_file, haplotag_dir, classification_file)
+create_dictionary(collapsed_file, haplotag_files, classification_file)
