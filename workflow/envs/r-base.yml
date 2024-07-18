@@ -14,3 +14,6 @@ dependencies:
   - r-tidyverse
   - r-rmarkdown
   - r-devtools
+  - r-purrr
+  - r-janitor
+  - r-stringr
