@@ -1,6 +1,5 @@
 #!/bin/bash
 # Adriana Sedeno
-# 5/16/2024
 # Append tags to a bam file
 
 # Check for the correct number of arguments
