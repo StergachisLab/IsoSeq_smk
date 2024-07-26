@@ -25,8 +25,14 @@ pip install snakemake snakemake-executor-plugin-slurm
 
 First set up a configuration file. See `config/config.yaml` for a commented example. 
 Then run snakemake with the following command pointing to your configuration file.
+
+We suggest using the following flags for execution control: 
 ```
-snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k
+-p (--printshellcmds): snakemake prints the shell commands that it executes for each rule.
+-k (--keep-going): Snakemake continues executing the workflow even if some jobs fail. 
+```
+```
+snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k --rerun-incomplete
 ```
 
 
