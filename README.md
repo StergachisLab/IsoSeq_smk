@@ -5,13 +5,28 @@ Multiple individuals can be defined for a combined analysis.
 
 The pipeline takes flnc.bam files as input. We haplotag this flnc bam individually. Ideally, a phased vcf should be provided, but if no phased vcf is available, an artificial HP:i:0 tag will be assigned to the annotations. 
 
+## Installation
+
+You will need snakemake and the snakemake executor plugin to distribute jobs on a cluster. 
+
+```
+# Create the conda environment
+conda create -n isoseq-smk python=3.9
+
+# Activate the conda environment
+conda activate isoseq-smk
+
+# Install pip, snakemake, and snakemake-executor-plugin-slurm
+conda install pip
+pip install snakemake snakemake-executor-plugin-slurm
+```
 
 ## Usage
 
 First set up a configuration file. See `config/config.yaml` for a commented example. 
 Then run snakemake with the following command pointing to your configuration file.
 ```
-snakemake --configfile config/config.yaml -p
+snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k
 ```
 
 
