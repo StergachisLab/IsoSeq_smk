@@ -11,7 +11,7 @@ You will need snakemake and the snakemake executor plugin to distribute jobs on 
 
 ```
 # Create the conda environment
-conda create -n isoseq-smk python=3.9
+conda create -n isoseq-smk python=3.11
 
 # Activate the conda environment
 conda activate isoseq-smk
