@@ -29,10 +29,11 @@ Then run snakemake with the following command pointing to your configuration fil
 We suggest using the following flags for execution control: 
 ```
 -p (--printshellcmds): snakemake prints the shell commands that it executes for each rule.
--k (--keep-going): Snakemake continues executing the workflow even if some jobs fail. 
+-k (--keep-going): Snakemake continues executing the workflow even if some jobs fail.
+--rerun-incomplete: Snakemake re-run incomplete
 ```
 ```
-snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k --rerun-incomplete
+snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k 
 ```
 
 
