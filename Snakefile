@@ -32,10 +32,10 @@ def has_vcf(wc):
     return "deepvariant_vcf" in config["individuals"][wc.individual]
 
 # get modified phased vcf file
-def get_mod_phased_vcf(wc):
-    phased_vcf = f"mod_vcf/{wc.individual}_mod.vcf.gz"
-    if not has_vcf(wc):
-        return f"mod_vcf/fake_{wc.individual}_mod.vcf.gz"
+def get_mod_phased_vcf(wildcards):
+    phased_vcf = f"mod_vcf/{wildcards.individual}_mod.vcf.gz"
+    if not has_vcf(wildcards):
+        return f"mod_vcf/fake_{wildcards.individual}_mod.vcf.gz"
     return phased_vcf
 
 # get the merged input for an individual, condition and label
@@ -51,9 +51,9 @@ def get_vcf_path(wildcards):
     if vcf_path:
         return vcf_path
     else:
-         raise KeyError(f"VCF path not found for individual {wc.individual}.")
+        return f"mod_vcf/fake_{wildcards.individual}_mod.vcf.gz"
 
-# combvine labels for an individual
+# combine labels for an individual
 def combine_labels(wildcards):
     individual = wildcards.individual
     rtn = []
@@ -283,7 +283,7 @@ rule label_transcripts:
     conda:
         "envs/env.yml"
     input:
-        "aligned/{individual}_aligned.bam"
+        bam = "aligned/{individual}_aligned.bam"
     output:
         bam = "aligned/{individual}_aligned_labeled.bam",
         header = temp("{individual}_aligned_header.sam")
