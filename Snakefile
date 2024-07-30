@@ -4,34 +4,56 @@ import glob
 
 configfile: 'config/config.yaml'
 
+# list of all individuals from the configuration file
+individuals = config["individuals"].keys()
+# list of conditions for each individual
+conditions = ["treated", "untreated"]
+# dictionary containing labels for each combination of individual and condition based on the configuration file
+labels = {individual: {condition: list(config["individuals"][individual][condition].keys())
+                       for condition in ["treated", "untreated"]}
+          for individual in individuals}
 
-labels = []
-for individual in config['individuals']:
-    for condition in ["treated", "untreated"]:
-        for label in config['individuals'][individual][condition]:
-            labels.append(label)
+# Define valid combinations of individual, condition, and label
+combinations = [
+    {"individual": ind, "condition": cond, "label": lbl}
+    for ind in individuals
+    for cond in ["treated", "untreated"]
+    for lbl in labels[ind][cond]
+]
 
-
-# Global wildcard constraints
+# Restrict the values that wildcards can take from the config file
 wildcard_constraints:
-    individual = "|".join(config["individuals"]),
+    individual = "|".join(individuals),
     condition = "treated|untreated",
-    label = "|".join(labels),
+    label = "|".join(set(label for ind in individuals for cond in conditions for label in labels[ind][cond]))
 
-
+# check if "deepvariant_vcf" exists for an individual
 def has_vcf(wc):
     return "deepvariant_vcf" in config["individuals"][wc.individual]
 
+# get modified phased vcf file
 def get_mod_phased_vcf(wc):
-    phased_vcf = f"mod_vcf/{individual}_mod.vcf.gz"
+    phased_vcf = f"mod_vcf/{wc.individual}_mod.vcf.gz"
     if not has_vcf(wc):
-        return f"mod_vcf/fake_{individual}_mod.vcf.gz"
+        return f"mod_vcf/fake_{wc.individual}_mod.vcf.gz"
     return phased_vcf
 
+# get the merged input for an individual, condition and label
 def get_merge_input(wc):
-    return config["individuals"][wc.individual][wc.condition][wc.label]
+    if wc.label in config["individuals"][wc.individual][wc.condition]:
+        return config["individuals"][wc.individual][wc.condition][wc.label]
+    else:
+        raise KeyError(f"Label {wc.label} not found for individual {wc.individual} and condition {wc.condition}.")
 
-# Function to combine samples from conditions [treated/untreated]
+# get vcf path for an individual
+def get_vcf_path(wildcards):
+    vcf_path = config['individuals'][wildcards.individual].get('deepvariant_vcf', None)
+    if vcf_path:
+        return vcf_path
+    else:
+         raise KeyError(f"VCF path not found for individual {wc.individual}.")
+
+# combvine labels for an individual
 def combine_labels(wildcards):
     individual = wildcards.individual
     rtn = []
@@ -41,6 +63,7 @@ def combine_labels(wildcards):
             rtn.append(file)
     return rtn
 
+# get haplotag files
 def get_haplotag_files(wildcards):
     files = []
     for individual in config['individuals']:
@@ -49,6 +72,7 @@ def get_haplotag_files(wildcards):
                 files.append(f"whatshap/{individual}_{condition}_{label}.haplotagged.txt")
     return files
 
+# get whatshap output files
 def whatshap_outs(wc):
     template_f_path = "whatshap/{individual}_{condition}_{label}.tagged.bam"
     rtn = []
@@ -64,7 +88,13 @@ def whatshap_outs(wc):
 
 rule all:
     input:
-        whatshap_outs
+        expand("whatshap/{individual}_{condition}_{label}.tagged.bam",
+               zip,
+               individual=[comb["individual"] for comb in combinations],
+               condition=[comb["condition"] for comb in combinations],
+               label=[comb["label"] for comb in combinations]),
+        "tag/dictionary_all.txt"
+
 
 rule merge_individual_condition:
     conda:
@@ -74,6 +104,7 @@ rule merge_individual_condition:
     output:
         bam = "merged/{individual}_{condition}_{label}_merged.bam"
     threads: config.get("threads", 40)
+    benchmark: "benchmark/merge_individual_condition/{individual}_{condition}_{label}.txt"
     shell:
         "samtools merge -@ {threads} {output.bam} {input}"
 
@@ -85,6 +116,7 @@ rule label_reads_with_condition:
     output:
         bam = "merged/{individual}_{condition}_{label}_labeled.bam"
     threads: config.get("threads", 40)
+    benchmark: "benchmark/label_reads_condition/{individual}_{condition}_{label}.txt"
     resources:
         mem_mb=8000
     shell:
@@ -94,7 +126,6 @@ rule label_reads_with_condition:
         samtools view -bS - > {output.bam}
         """
 
-
 rule align_sample:
     conda:
         "envs/env.yml"
@@ -103,6 +134,7 @@ rule align_sample:
     output:
         aligned = "aligned/{individual}_{condition}_{label}_aligned.bam"
     threads: 8
+    benchmark: "benchmark/align_samples/{individual}_{condition}_{label}.txt"
     shell:
         """
         pbmm2 align {config[reference_genome]} {input.bam} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
@@ -122,16 +154,15 @@ rule modify_rg:
         samtools index {output.bam}
         """
 
-
 rule modify_vcf:
     conda:
         "envs/env.yml"
     input:
-        vcf = lambda wildcards: config['individuals'][wildcards.individual]['deepvariant_vcf']
+        vcf = get_vcf_path
     output:
         mod_vcf = "mod_vcf/{individual}_mod.vcf.gz",
         mod_vcf_tbi = "mod_vcf/{individual}_mod.vcf.gz.tbi"
-    threads: config.get("threads", 40)    
+    threads: config.get("threads", 40)
     shell:
         r"""
         if [[ "{input.vcf}" =~ \.gz$ ]]; then
@@ -154,7 +185,6 @@ rule fake_vcf:
         """
         touch {output}
         """
-        
 
 rule whatshap_stats:
     conda:
@@ -184,6 +214,7 @@ rule whatshap_haplotag:
     params:
         has_vcf = lambda wc: "true" if has_vcf(wc) else "false"
     threads: config.get("threads", 40)
+    benchmark: "benchmark/whatshap_haplotag/{individual}_{condition}_{label}.txt"
     shell:
         """
         if [ {params.has_vcf} == "true" ]; then
@@ -201,6 +232,7 @@ rule extract_read_info:
         bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam"
     output:
         txt = "whatshap/{individual}_{condition}_{label}.haplotagged.txt"
+    benchmark: "benchmark/extract_read_info/{individual}_{condition}_{label}.txt"
     shell:
         """
         python ./scripts/extract_read_info.py {input.bam} {output.txt}
@@ -215,6 +247,7 @@ rule merge_samples:
         bam = "merged/{individual}_all_conditions_merged.bam",
         bai = "merged/{individual}_all_conditions_merged.bam.bai"
     threads: config.get("threads", 40)
+    benchmark: "benchmark/merge_samples/{individual}_all_conditions.txt"
     shell:
         """
         samtools merge -@ {threads} {output.bam} {input.bam}
@@ -230,6 +263,7 @@ rule cluster:
     output:
         clustered = "clustered/{individual}_clustered.bam"
     threads: config.get("threads", 40)
+    benchmark: "benchmark/cluster/{individual}_all_conditions.txt"
     shell:
         "isoseq3 cluster {input.bam} {output.clustered} --verbose -j {threads} --singletons"
 
@@ -241,6 +275,7 @@ rule align:
     output:
         aligned="aligned/{individual}_aligned.bam"
     threads: 8
+    benchmark: "benchmark/align/{individual}_aligned.txt"
     shell:
         "pbmm2 align {config[reference_genome]} {input} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO"
 
@@ -260,7 +295,6 @@ rule label_transcripts:
         samtools view -@ {threads} -bS - > {output.bam}
         """
 
-
 rule merge_all_aligned:
     conda:
         "envs/env.yml"
@@ -269,6 +303,7 @@ rule merge_all_aligned:
     output:
         "aligned/all_individuals_aligned_merged.bam"
     threads: config.get("threads", 40)
+    benchmark: "benchmark/merge_all_aligned/all_aligned_merged.txt"
     shell:
         """
         samtools merge -@ {threads} {output} {input}
@@ -286,6 +321,7 @@ rule collapse:
         collapsed_readstat="collapse/collapsed.read_stat.txt",
         collapsed_count="collapse/collapsed.flnc_count.txt"
     threads: config.get("threads", 40)
+    benchmark: "benchmark/collapse/collapse.txt"
     shell:
         "isoseq3 collapse --num-threads {threads} {input} {output.collapsed_gff} --verbose"
 
@@ -301,6 +337,7 @@ rule pigeon_process:
         report="pigeon/saturation.txt"
     params:
         pigeon_annot=config['pigeon_annot']
+    benchmark: "benchmark/pigeon_process/pigeon.txt"
     shell:
         """
         pigeon sort {input.collapsed_gff} -o {output.sorted_gff}
@@ -318,11 +355,11 @@ rule create_dictionary:
         classification="pigeon/pigeon_classification.txt"
     output:
         dictionary="tag/dictionary_all.txt"
+    benchmark: "benchmark/create_dictionary/dictionary.txt"
     shell:
         """
         Rscript ./scripts/create_dictionary.R {input.collapsed} {input.haplotag} {input.classification}
         """
-
 
 rule add_tags_to_bam:
     conda:
@@ -333,6 +370,7 @@ rule add_tags_to_bam:
     output:
         bam="whatshap/{individual}_{condition}_{label}.tagged.bam",
         bai="whatshap/{individual}_{condition}_{label}.tagged.bam.bai"
+    benchmark: "benchmark/add_tags_to_bam/{individual}_{condition}_{label}_tagged.txt"
     shell:
         """
         ./scripts/add_tags_to_bam.sh {input.bam} {input.dictionary} {output.bam}
