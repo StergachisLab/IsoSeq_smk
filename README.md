@@ -5,6 +5,19 @@ Multiple individuals can be defined for a combined analysis.
 
 The pipeline takes flnc.bam files as input. We haplotag this flnc bam individually. Ideally, a phased vcf should be provided, but if no phased vcf is available, an artificial HP:i:0 tag will be assigned to the annotations. 
 
+In this pipeline, we are incorporating custom Iso-Seq tags that are being integrating onto aligned flnc bam files as part of the final output. These tags aim to integrate information derived from pigeon [output file pigeon_classification.txt] :
+
+haplotype (HP:i:)
+isoform (in:Z:)
+structural_category (st:Z:)
+associated_gene (gn:Z:)
+associated_transcript (tn:Z:)
+subcategory (sb:Z:)
+isoform_haplotype_noncyclo_counts (hn:i:)
+isoform_haplotype_cyclo_counts (hc:i:)
+isoform_noncyclo_counts (nc:i:)
+isoform_cyclo_counts (cc:i:)
+
 ## Installation
 
 You will need snakemake and the snakemake executor plugin to distribute jobs on a cluster. 
