@@ -7,6 +7,7 @@ The pipeline takes flnc.bam files as input. We haplotag this flnc bam individual
 
 In this pipeline, we are incorporating custom Iso-Seq tags that are being integrating onto aligned flnc bam files as part of the final output. These tags aim to integrate information derived from pigeon [output file pigeon_classification.txt] :
 
+```
 haplotype (HP:i:)
 isoform (in:Z:)
 structural_category (st:Z:)
@@ -17,6 +18,7 @@ isoform_haplotype_noncyclo_counts (hn:i:)
 isoform_haplotype_cyclo_counts (hc:i:)
 isoform_noncyclo_counts (nc:i:)
 isoform_cyclo_counts (cc:i:)
+```
 
 ## Installation
 
