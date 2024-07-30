@@ -218,7 +218,7 @@ rule whatshap_haplotag:
     shell:
         """
         if [ {params.has_vcf} == "true" ]; then
-            whatshap haplotag -t {threads} {input.phased_vcf_gz} {input.bam} -o {output.haplotagged_bam} --reference {input.reference} --output-haplotag-list {output.list_txt}
+            whatshap haplotag {input.phased_vcf_gz} {input.bam} -o {output.haplotagged_bam} --reference {input.reference} --output-haplotag-list {output.list_txt}
         else
             # add back fake haplotpag script
             ./scripts/add_hp0.sh {input.bam} {output.haplotagged_bam}  
@@ -285,13 +285,12 @@ rule label_transcripts:
     input:
         bam = "aligned/{individual}_aligned.bam"
     output:
-        bam = "aligned/{individual}_aligned_labeled.bam",
-        header = temp("{individual}_aligned_header.sam")
+        bam = "aligned/{individual}_aligned_labeled.bam"
     threads: config.get("threads", 40)
     shell:
         r"""
-        (samtools view -@ {threads} -H {input.bam} && \
-        samtools view -@ {threads} {input.bam} | awk -v id={wildcards.individual} 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}') | \
+        (
+        samtools view -@ {threads} -h {input.bam} | awk -v id={wildcards.individual} 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}') | \
         samtools view -@ {threads} -bS - > {output.bam}
         """
 
