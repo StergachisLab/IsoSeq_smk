@@ -48,7 +48,7 @@ We suggest using the following flags for execution control:
 --rerun-incomplete: Enables Snakemake to re-execute any previously incomplete rules. 
 ```
 ```
-snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k 
+snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k --verbose
 ```
 
 
