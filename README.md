@@ -33,7 +33,8 @@ conda activate isoseq-smk
 
 # Install pip, snakemake, and snakemake-executor-plugin-slurm
 conda install pip
-pip install snakemake snakemake-executor-plugin-slurm
+pip install snakemake
+pip install snakemake-executor-plugin-slurm
 ```
 
 ## Usage
