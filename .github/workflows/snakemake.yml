@@ -24,7 +24,7 @@ jobs:
 
     - name: Execute Snakemake
       run: |
-        snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k
+        snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k --dry-run --use-conda
 
     - name: Generate HTML report
       run: |
