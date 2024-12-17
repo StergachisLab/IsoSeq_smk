@@ -107,10 +107,28 @@ rule merge_individual_condition:
         get_merge_input
     output:
         bam = "merged/{individual}_{condition}_{label}_merged.bam"
-    threads: config.get("threads", 40)
+    threads: config.get("threads", 4)
     benchmark: "benchmark/merge_individual_condition/{individual}_{condition}_{label}.txt"
     shell:
-        "samtools merge -@ {threads} {output.bam} {input}"
+        """
+        # Merge BAM files
+        samtools merge -@ {threads} {output.bam} {input}
+
+        # Check the total number of reads in the merged BAM file
+        total_reads=$(samtools view -c {output.bam})
+        echo "Total reads in merged BAM: ${total_reads}"
+
+        # If total reads exceed 7 million, downsample to ~5 million reads
+        if (( total_reads > 7000000 )); then
+            echo "File {output.bam} has more than 7M reads (${total_reads}). Downsampling to ~5M reads..."
+            temp_downsampled_bam=$(mktemp)
+            samtools view -s $((5000000 / total_reads)) -b {output.bam} > "$temp_downsampled_bam"
+            mv "$temp_downsampled_bam" {output.bam}
+            echo "Downsampling completed and replaced the original merged BAM."
+        else
+            echo "File {output.bam} has less than 7M reads. No downsampling performed."
+        fi
+        """
 
 rule label_reads_with_condition:
     conda:
@@ -119,7 +137,7 @@ rule label_reads_with_condition:
         bam = "merged/{individual}_{condition}_{label}_merged.bam"
     output:
         bam = "merged/{individual}_{condition}_{label}_labeled.bam"
-    threads: config.get("threads", 40)
+    threads: config.get("threads", 4)
     benchmark: "benchmark/label_reads_condition/{individual}_{condition}_{label}.txt"
     resources:
         mem_mb=8000
@@ -166,7 +184,7 @@ rule modify_vcf:
     output:
         mod_vcf="mod_vcf/{individual}_mod.vcf.gz",
         mod_vcf_tbi="mod_vcf/{individual}_mod.vcf.gz.tbi"
-    threads: config.get("threads", 40)
+    threads: config.get("threads", 4)
     shell:
         r"""
         if [[ "{input.vcf}" == "None" ]]; then
@@ -193,7 +211,7 @@ rule whatshap_stats:
         tsv = "whatshap/{individual}.phased_stats.tsv",
         block_list = "whatshap/{individual}.phased.blocks.txt",
         gtf = "whatshap/{individual}.phased.blocks.gtf"
-    threads: config.get("threads", 40)
+    threads: config.get("threads", 4)
     shell:
         """
         whatshap stats --threads {threads} --tsv {output.tsv} --block-list {output.block_list} --gtf {output.gtf} {input.phased_vcf}
@@ -243,7 +261,7 @@ rule merge_samples:
     output:
         bam = "merged/{individual}_all_conditions_merged.bam",
         bai = "merged/{individual}_all_conditions_merged.bam.bai"
-    threads: config.get("threads", 40)
+    threads: config.get("threads", 4)
     benchmark: "benchmark/merge_samples/{individual}_all_conditions.txt"
     shell:
         """
@@ -259,7 +277,7 @@ rule cluster:
         bai = "merged/{individual}_all_conditions_merged.bam.bai"
     output:
         clustered = "clustered/{individual}_clustered.bam"
-    threads: config.get("threads", 40)
+    threads: config.get("threads", 4)
     benchmark: "benchmark/cluster/{individual}_all_conditions.txt"
     shell:
         "isoseq3 cluster {input.bam} {output.clustered} --verbose -j {threads} --singletons"
@@ -283,7 +301,7 @@ rule label_transcripts:
         bam = "aligned/{individual}_aligned.bam"
     output:
         bam = "aligned/{individual}_aligned_labeled.bam"
-    threads: config.get("threads", 40)
+    threads: config.get("threads", 4)
     shell:
         r"""
         (
@@ -298,7 +316,7 @@ rule merge_all_aligned:
         lambda wildcards: expand("aligned/{individual}_aligned_labeled.bam", individual=config['individuals'].keys())
     output:
         "aligned/all_individuals_aligned_merged.bam"
-    threads: config.get("threads", 40)
+    threads: config.get("threads", 4)
     benchmark: "benchmark/merge_all_aligned/all_aligned_merged.txt"
     shell:
         """
@@ -316,7 +334,7 @@ rule collapse:
         collapsed_abundance="collapse/collapsed.abundance.txt",
         collapsed_readstat="collapse/collapsed.read_stat.txt",
         collapsed_count="collapse/collapsed.flnc_count.txt"
-    threads: config.get("threads", 40)
+    threads: config.get("threads", 4)
     benchmark: "benchmark/collapse/collapse.txt"
     shell:
         "isoseq3 collapse --num-threads {threads} {input} {output.collapsed_gff}"
