@@ -19,7 +19,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install snakemake snakemake-executor-slurm
+        pip install snakemake
+        pip install snakemake-executor-plugin-slurm
 
     - name: Execute Snakemake
       run: |
