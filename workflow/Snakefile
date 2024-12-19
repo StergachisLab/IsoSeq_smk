@@ -32,11 +32,12 @@ wildcard_constraints:
     condition = "treated|untreated",
     label = "|".join(set(label for ind in individuals for cond in conditions for label in labels[ind][cond]))
 
+print(wildcard_constraints)
+
 # check if "deepvariant_vcf" exists for an individual
 def has_vcf(wildcards):
-    vcf_path = f"mod_vcf/{wildcards.individual}_mod.vcf.gz"
-    return os.path.exists(vcf_path)
-
+    vcf_path = get_vcf_path(wildcards)
+    return vcf_path is not None and os.path.exists(vcf_path)
 
 # get modified phased vcf file
 def get_mod_phased_vcf(wildcards):
@@ -56,6 +57,8 @@ def get_merge_input(wc):
 # get vcf path for an individual
 def get_vcf_path(wildcards):
     return config['individuals'][wildcards.individual].get('deepvariant_vcf')
+
+print(get_vcf_path({'individual': 'individual1'}))
 
 # combine labels for an individual
 def combine_labels(wildcards):
@@ -108,7 +111,8 @@ rule merge_individual_condition:
     output:
         bam = "merged/{individual}_{condition}_{label}_merged.bam"
     threads: config.get("threads", 4)
-    resources: mem_mb=80000    
+    resources: 
+        runtime = 480
     benchmark: "benchmark/merge_individual_condition/{individual}_{condition}_{label}.txt"
     shell:
         """
@@ -139,9 +143,10 @@ rule label_reads_with_condition:
         bam = "merged/{individual}_{condition}_{label}_merged.bam"
     output:
         bam = "merged/{individual}_{condition}_{label}_labeled.bam"
-    threads: config.get("threads", 4)
     benchmark: "benchmark/label_reads_condition/{individual}_{condition}_{label}.txt"
-    resources: mem_mb=80000
+    threads: config.get("threads", 4)
+    resources: 
+        runtime = 480
     shell:
         r"""
         samtools view -@ {threads} -h {input.bam} | \
@@ -156,8 +161,10 @@ rule align_sample:
         bam = "merged/{individual}_{condition}_{label}_labeled.bam"
     output:
         aligned = "aligned/{individual}_{condition}_{label}_aligned.bam"
-    threads: 8
-    resources: mem_mb=80000
+    threads: config.get("threads", 4)
+    resources: 
+        runtime= 480,
+        mem_mb=130000
     benchmark: "benchmark/align_samples/{individual}_{condition}_{label}.txt"
     shell:
         """
@@ -172,7 +179,9 @@ rule modify_rg:
     output:
         bam = "aligned/{individual}_{condition}_{label}_modified_aligned.bam",
         bai = "aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai"
-    resources: mem_mb=80000        
+    threads: config.get("threads", 4)
+    resources: 
+        runtime= 480       
     shell:
         """
         samtools addreplacerg -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' -o {output.bam} {input.bam}
@@ -187,8 +196,9 @@ rule modify_vcf:
     output:
         mod_vcf="mod_vcf/{individual}_mod.vcf.gz",
         mod_vcf_tbi="mod_vcf/{individual}_mod.vcf.gz.tbi"
-    threads: config.get("threads", 4)
-    resources: mem_mb=80000
+    threads: config.get("threads", 2)
+    resources: 
+        runtime= 480
     shell:
         r"""
         if [[ "{input.vcf}" == "None" ]]; then
@@ -215,8 +225,9 @@ rule whatshap_stats:
         tsv = "whatshap/{individual}.phased_stats.tsv",
         block_list = "whatshap/{individual}.phased.blocks.txt",
         gtf = "whatshap/{individual}.phased.blocks.gtf"
-    threads: config.get("threads", 4)
-    resources: mem_mb=80000
+    threads: config.get("threads", 2)
+    resources: 
+        runtime= 480
     shell:
         """
         whatshap stats --threads {threads} --tsv {output.tsv} --block-list {output.block_list} --gtf {output.gtf} {input.phased_vcf}
@@ -233,7 +244,8 @@ rule whatshap_haplotag:
         list_txt = temp("whatshap/{individual}_{condition}_{label}.list.txt")
     conda:
         "envs/env.yml"
-    resources: mem_mb=80000
+    resources: 
+        runtime= 480
     shell:
         """
         if [ "{params.phased_vcf_gz}" != "None" ]; then
@@ -254,7 +266,8 @@ rule extract_read_info:
     output:
         txt = "whatshap/{individual}_{condition}_{label}.haplotagged.txt"
     benchmark: "benchmark/extract_read_info/{individual}_{condition}_{label}.txt"
-    resources: mem_mb=80000
+    resources: 
+        runtime= 480
     shell:
         """
         python ./scripts/extract_read_info.py {input.bam} {output.txt}
@@ -269,7 +282,8 @@ rule merge_samples:
         bam = "merged/{individual}_all_conditions_merged.bam",
         bai = "merged/{individual}_all_conditions_merged.bam.bai"
     threads: config.get("threads", 4)
-    resources: mem_mb=80000
+    resources: 
+        runtime= 480
     benchmark: "benchmark/merge_samples/{individual}_all_conditions.txt"
     shell:
         """
@@ -286,7 +300,11 @@ rule cluster:
     output:
         clustered = "clustered/{individual}_clustered.bam"
     threads: config.get("threads", 4)
-    resources: mem_mb=350000
+    resources: 
+        runtime=1800,
+        mem_mb=350000
+    params:
+        partition="compute-ultamem"
     benchmark: "benchmark/cluster/{individual}_all_conditions.txt"
     shell:
         "isoseq3 cluster {input.bam} {output.clustered} --verbose -j {threads} --singletons"
@@ -298,8 +316,10 @@ rule align:
         "clustered/{individual}_clustered.bam"
     output:
         aligned="aligned/{individual}_aligned.bam"
-    threads: 8
-    resources: mem_mb=80000
+    threads: config.get("threads", 4)
+    resources: 
+        runtime= 480,
+        mem_mb=130000
     benchmark: "benchmark/align/{individual}_aligned.txt"
     shell:
         "pbmm2 align {config[reference_genome]} {input} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO"
@@ -312,7 +332,9 @@ rule label_transcripts:
     output:
         bam = "aligned/{individual}_aligned_labeled.bam"
     threads: config.get("threads", 4)
-    resources: mem_mb=80000
+    resources: 
+        runtime= 480,
+        mem_mb=80000
     shell:
         r"""
         (
@@ -328,7 +350,9 @@ rule merge_all_aligned:
     output:
         "aligned/all_individuals_aligned_merged.bam"
     threads: config.get("threads", 4)
-    resources: mem_mb=80000
+    resources: 
+        runtime= 480,
+        mem_mb=80000
     benchmark: "benchmark/merge_all_aligned/all_aligned_merged.txt"
     shell:
         """
@@ -347,7 +371,9 @@ rule collapse:
         collapsed_readstat="collapse/collapsed.read_stat.txt",
         collapsed_count="collapse/collapsed.flnc_count.txt"
     threads: config.get("threads", 4)
-    resources: mem_mb=80000
+    resources: 
+        runtime= 480,
+        mem_mb=80000
     benchmark: "benchmark/collapse/collapse.txt"
     shell:
         "isoseq3 collapse --num-threads {threads} {input} {output.collapsed_gff}"
@@ -365,7 +391,10 @@ rule pigeon_process:
     params:
         pigeon_annot=config['pigeon_annot']
     benchmark: "benchmark/pigeon_process/pigeon.txt"
-    resources: mem_mb=80000
+    threads: config.get("threads", 4)
+    resources: 
+        runtime= 480,
+        mem_mb=80000
     shell:
         """
         pigeon sort {input.collapsed_gff} -o {output.sorted_gff}
@@ -384,7 +413,10 @@ rule create_dictionary:
     output:
         dictionary="tag/dictionary_all.txt"
     benchmark: "benchmark/create_dictionary/dictionary.txt"
-    resources: mem_mb=350000
+    threads: config.get("threads", 4)
+    resources: 
+        runtime= 480,
+        mem_mb=80000
     shell:
         """
         Rscript ./scripts/create_dictionary.R {input.collapsed} {input.haplotag} {input.classification}
@@ -400,7 +432,10 @@ rule add_tags_to_bam:
         bam="whatshap/{individual}_{condition}_{label}.tagged.bam",
         bai="whatshap/{individual}_{condition}_{label}.tagged.bam.bai"
     benchmark: "benchmark/add_tags_to_bam/{individual}_{condition}_{label}_tagged.txt"
-    resources: mem_mb=100000
+    threads: config.get("threads", 4)
+    resources: 
+        runtime= 480,
+        mem_mb=80000
     shell:
         """
         ./scripts/add_tags_to_bam.sh {input.bam} {input.dictionary} {output.bam}
