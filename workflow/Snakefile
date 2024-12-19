@@ -21,18 +21,14 @@ combinations = [
     for lbl in labels[ind][cond]
 ]
 
-
 print("Loaded individuals:", individuals)
 print("Loaded labels:", labels)
-
 
 # Restrict the values that wildcards can take from the config file
 wildcard_constraints:
     individual = "|".join(individuals),
     condition = "treated|untreated",
     label = "|".join(set(label for ind in individuals for cond in conditions for label in labels[ind][cond]))
-
-print(wildcard_constraints)
 
 # check if "deepvariant_vcf" exists for an individual
 def has_vcf(wildcards):
@@ -46,6 +42,9 @@ def get_mod_phased_vcf(wildcards):
         return phased_vcf
     return None
 
+# get vcf path for an individual
+def get_vcf_path(wildcards):
+    return config['individuals'][wildcards["individual"]].get('deepvariant_vcf')
 
 # get the merged input for an individual, condition and label
 def get_merge_input(wc):
@@ -53,12 +52,6 @@ def get_merge_input(wc):
         return config["individuals"][wc.individual][wc.condition][wc.label]
     else:
         raise KeyError(f"Label {wc.label} not found for individual {wc.individual} and condition {wc.condition}.")
-
-# get vcf path for an individual
-def get_vcf_path(wildcards):
-    return config['individuals'][wildcards.individual].get('deepvariant_vcf')
-
-print(get_vcf_path({'individual': 'individual1'}))
 
 # combine labels for an individual
 def combine_labels(wildcards):
