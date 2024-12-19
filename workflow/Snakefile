@@ -95,7 +95,6 @@ rule all:
                label=[comb["label"] for comb in combinations]),
         "tag/dictionary_all.txt"
 
-
 rule merge_individual_condition:
     conda:
         "envs/env.yml"
@@ -104,28 +103,33 @@ rule merge_individual_condition:
     output:
         bam = "merged/{individual}_{condition}_{label}_merged.bam"
     threads: config.get("threads", 4)
-    resources: 
+    resources:
         runtime = 480
     benchmark: "benchmark/merge_individual_condition/{individual}_{condition}_{label}.txt"
     shell:
-        """
+       """
         # Merge BAM files
         samtools merge -@ {threads} {output.bam} {input}
 
         # Check the total number of reads in the merged BAM file
         total_reads=$(samtools view -c {output.bam})
-        echo "Total reads in merged BAM: ${{total_reads}}"
+        echo "Total reads in merged BAM: $total_reads"
 
-        # If total reads exceed 7 million, downsample to ~5 million reads
-        if (( ${{total_reads}} > 7000000 )); then
-            echo "File {output.bam} has more than 7M reads (${{total_reads}}). Downsampling to ~5M reads..."
+        max_reads={config[max_reads]}
+        downsample_reads={config[downsample_reads]}
+
+        # If total_reads exceeds max_reads
+        if (( $total_reads > $max_reads )); then
+            echo "File {output.bam} has more than $max_reads reads ($total_reads). Downsampling to ~$downsample_reads reads..."
             temp_downsampled_bam=$(mktemp)
-            fraction=$(echo "scale=6; 5000000 / ${{total_reads}}" | bc)
-            samtools view -s 42.${{fraction}} -b {output.bam} > "$temp_downsampled_bam"
+            fraction=$(echo "scale=6; $downsample_reads / $total_reads" | bc)
+            fraction=$(echo "$fraction" | sed 's/^0//')
+
+            samtools view -s 42$fraction -b {output.bam} > "$temp_downsampled_bam"
             mv "$temp_downsampled_bam" {output.bam}
             echo "Downsampling completed and replaced the original merged BAM."
         else
-            echo "File {output.bam} has less than 7M reads. No downsampling performed."
+            echo "File {output.bam} has less than $max_reads reads. No downsampling performed."
         fi
         """
 
@@ -141,7 +145,7 @@ rule label_reads_with_condition:
     resources: 
         runtime = 480
     shell:
-        r"""
+        """
         samtools view -@ {threads} -h {input.bam} | \
         awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}' | \
         samtools view -bS - > {output.bam}
