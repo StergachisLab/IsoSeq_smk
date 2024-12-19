@@ -292,7 +292,7 @@ individuals:
       cyclo_PS00450:
         - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00450/m84046_240329_064709_s2/IsoSeqX_bc12_5p--IsoSeqX_3p/PS00450.m84046_240329_064709_s2.IsoSeqX_bc12_5p--IsoSeqX_3p.flnc.bam
   UDN215640:
-    deepvariant_vcf: na.vcf
+    deepvariant_vcf:
     untreated:
       non-cyclo_PS00364:
         - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00364/m84046_230829_213454_s3/MAS_3p--10X_IsoSeqX_bc08_5p/PS00364.m84046_230829_213454_s3.MAS_3p--10X_IsoSeqX_bc08_5p.flnc.bam
@@ -301,4 +301,6 @@ individuals:
         - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00365/m84046_230829_213454_s3/MAS_3p--10X_IsoSeqX_bc09_5p/PS00365.m84046_230829_213454_s3.MAS_3p--10X_IsoSeqX_bc09_5p.flnc.bam
 reference_genome: /gscratch/stergachislab/assemblies/simple-names/hg38.fa
 pigeon_annot: /gscratch/stergachislab/asedeno/data/reference_files/gencode.v46.annotation.gtf
-threads: 40
+threads: 8
+max_reads: 7000000
+downsample_reads: 5000000
