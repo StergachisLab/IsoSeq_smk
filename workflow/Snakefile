@@ -243,6 +243,8 @@ rule whatshap_stats:
         """
 
 rule whatshap_haplotag:
+    conda:
+        "envs/env.yml"
     input:
         bam = "aligned/{individual}_{condition}_{label}_modified_aligned.bam",
         phased_vcf_gz = "mod_vcf/{individual}_mod.vcf.gz",
