@@ -96,6 +96,7 @@ rule all:
                individual=[comb["individual"] for comb in combinations],
                condition=[comb["condition"] for comb in combinations],
                label=[comb["label"] for comb in combinations]),
+        expand("whatshap/{individual}.phased_stats.tsv", individual=individuals),
         "tag/dictionary_all.txt"
 
 rule merge_individual_condition:
@@ -242,24 +243,24 @@ rule whatshap_stats:
         """
 
 rule whatshap_haplotag:
-    conda:
-        "envs/env.yml"
     input:
-        bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
-        phased_vcf_gz="mod_vcf/{individual}_mod.vcf.gz",
-        reference=config['reference_genome']
+        bam = "aligned/{individual}_{condition}_{label}_modified_aligned.bam",
+        phased_vcf_gz = "mod_vcf/{individual}_mod.vcf.gz",
+        reference = config['reference_genome']
     output:
-        haplotagged_bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
-        list_txt=temp("whatshap/{individual}_{condition}_{label}.list.txt")
+        haplotagged_bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam",
+        list_txt = "whatshap/{individual}_{condition}_{label}.list.txt"
     shell:
         """
-        if [ -s {input.phased_vcf_gz} ] && zcat {input.phased_vcf_gz} | grep -v '^#' | grep -q '.'; then
-          # The VCF contains at least one variant line
+        zcat {input.phased_vcf_gz} | head
+        
+        if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then
+            echo "Variants found. Running whatshap haplotag."
             whatshap haplotag {input.phased_vcf_gz} {input.bam} \
                 -o {output.haplotagged_bam} --reference {input.reference} \
                 --output-haplotag-list {output.list_txt}
         else
-            # No variants, run fallback script
+            echo "No variants found or condition failed. Running add_hp0.sh."
             ./scripts/add_hp0.sh {input.bam} {output.haplotagged_bam}
             touch {output.list_txt}
         fi
@@ -309,9 +310,8 @@ rule cluster:
     threads: config.get("threads", 4)
     resources: 
         runtime=1800,
-        mem_mb=350000
-    params:
-        partition="compute-ultamem"
+        mem_mb=550000,
+        slurm_partition="compute-ultramem"
     benchmark: "benchmark/cluster/{individual}_all_conditions.txt"
     shell:
         "isoseq3 cluster {input.bam} {output.clustered} --verbose -j {threads} --singletons"
