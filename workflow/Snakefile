@@ -44,7 +44,10 @@ def get_mod_phased_vcf(wildcards):
 
 # get vcf path for an individual
 def get_vcf_path(wildcards):
-    return config['individuals'][wildcards["individual"]].get('deepvariant_vcf')
+    vcf = config['individuals'][wildcards["individual"]].get('deepvariant_vcf')
+    if vcf and os.path.exists(vcf):
+        return vcf
+    return []
 
 # get the merged input for an individual, condition and label
 def get_merge_input(wc):
@@ -107,24 +110,33 @@ rule merge_individual_condition:
         runtime = 480
     benchmark: "benchmark/merge_individual_condition/{individual}_{condition}_{label}.txt"
     shell:
-       """
-        # Merge BAM files
-        samtools merge -@ {threads} {output.bam} {input}
-
-        # Check the total number of reads in the merged BAM file
-        total_reads=$(samtools view -c {output.bam})
-        echo "Total reads in merged BAM: $total_reads"
+        r"""
+        set -euo pipefail
 
         max_reads={config[max_reads]}
         downsample_reads={config[downsample_reads]}
 
-        # If total_reads exceeds max_reads
+        input_files=({input})
+        num_files=${{#input_files[@]}}
+
+        if [ $num_files -eq 1 ]; then
+            # Only one file, just copy it
+            cp {input} {output.bam}
+        else
+            # Merge multiple files
+            samtools merge -@ {threads} {output.bam} {input}
+        fi
+
+        # Check total reads in the resulting BAM file
+        total_reads=$(samtools view -c {output.bam})
+        echo "Total reads in merged BAM: $total_reads"
+
+        # Downsampling if needed
         if (( $total_reads > $max_reads )); then
             echo "File {output.bam} has more than $max_reads reads ($total_reads). Downsampling to ~$downsample_reads reads..."
             temp_downsampled_bam=$(mktemp)
             fraction=$(echo "scale=6; $downsample_reads / $total_reads" | bc)
             fraction=$(echo "$fraction" | sed 's/^0//')
-
             samtools view -s 42$fraction -b {output.bam} > "$temp_downsampled_bam"
             mv "$temp_downsampled_bam" {output.bam}
             echo "Downsampling completed and replaced the original merged BAM."
@@ -189,26 +201,25 @@ rule modify_vcf:
     conda:
         "envs/env.yml"
     input:
-        vcf=lambda wildcards: get_vcf_path(wildcards) if has_vcf(wildcards) else None
+        vcf=get_vcf_path
     output:
         mod_vcf="mod_vcf/{individual}_mod.vcf.gz",
         mod_vcf_tbi="mod_vcf/{individual}_mod.vcf.gz.tbi"
     threads: config.get("threads", 2)
-    resources: 
-        runtime= 480
+    resources:
+        runtime=480
     shell:
         r"""
-        if [[ "{input.vcf}" == "None" ]]; then
-            echo "Skipping VCF processing for individual {wildcards.individual}. No VCF defined."
+        if [ ! -s "{input.vcf}" ]; then
+            # No VCF provided, create an empty one
+            (echo "##fileformat=VCFv4.2"; echo "#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT UnnamedSample") \
+            | bgzip -c > {output.mod_vcf} && tabix -p vcf {output.mod_vcf}
         else
-            if [[ "{input.vcf}" =~ \.gz$ ]]; then
-                zcat {input.vcf}
-            else
-                cat {input.vcf}
-            fi | \
-            bcftools view | \
-            awk 'BEGIN {{FS=OFS="\t"}} /^#CHROM/ {{$10="UnnamedSample"; print; next}} {{print}}' | \
-            bgzip -@ {threads} -c > {output.mod_vcf} && \
+            # Process the existing VCF
+            (zcat {input.vcf} 2>/dev/null || cat {input.vcf}) \
+            | bcftools view \
+            | awk 'BEGIN {{FS=OFS="\t"}} /^#CHROM/ {{$10="UnnamedSample"; print; next}} {{print}}' \
+            | bgzip -@ {threads} -c > {output.mod_vcf} && \
             tabix -p vcf {output.mod_vcf}
         fi
         """
@@ -231,25 +242,24 @@ rule whatshap_stats:
         """
 
 rule whatshap_haplotag:
-    input:
-        bam = "aligned/{individual}_{condition}_{label}_modified_aligned.bam",
-        reference = config['reference_genome']
-    params:
-        phased_vcf_gz = lambda wc: f"mod_vcf/{wc.individual}_mod.vcf.gz" if os.path.exists(f"mod_vcf/{wc.individual}_mod.vcf.gz") else None,
-    output:
-        haplotagged_bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam",
-        list_txt = temp("whatshap/{individual}_{condition}_{label}.list.txt")
     conda:
         "envs/env.yml"
-    resources: 
-        runtime= 480
+    input:
+        bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
+        phased_vcf_gz="mod_vcf/{individual}_mod.vcf.gz",
+        reference=config['reference_genome']
+    output:
+        haplotagged_bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
+        list_txt=temp("whatshap/{individual}_{condition}_{label}.list.txt")
     shell:
         """
-        if [ "{params.phased_vcf_gz}" != "None" ]; then
-            whatshap haplotag {params.phased_vcf_gz} {input.bam} \
+        if [ -s {input.phased_vcf_gz} ] && zcat {input.phased_vcf_gz} | grep -v '^#' | grep -q '.'; then
+          # The VCF contains at least one variant line
+            whatshap haplotag {input.phased_vcf_gz} {input.bam} \
                 -o {output.haplotagged_bam} --reference {input.reference} \
                 --output-haplotag-list {output.list_txt}
         else
+            # No variants, run fallback script
             ./scripts/add_hp0.sh {input.bam} {output.haplotagged_bam}
             touch {output.list_txt}
         fi
