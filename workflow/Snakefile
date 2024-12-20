@@ -245,6 +245,9 @@ rule whatshap_stats:
 rule whatshap_haplotag:
     conda:
         "envs/env.yml"
+    resources: 
+        runtime= 480,
+        mem_mb=130000
     input:
         bam = "aligned/{individual}_{condition}_{label}_modified_aligned.bam",
         phased_vcf_gz = "mod_vcf/{individual}_mod.vcf.gz",
@@ -253,9 +256,7 @@ rule whatshap_haplotag:
         haplotagged_bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam",
         list_txt = "whatshap/{individual}_{condition}_{label}.list.txt"
     shell:
-        """
-        zcat {input.phased_vcf_gz} | head
-        
+        """      
         if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then
             echo "Variants found. Running whatshap haplotag."
             whatshap haplotag {input.phased_vcf_gz} {input.bam} \
