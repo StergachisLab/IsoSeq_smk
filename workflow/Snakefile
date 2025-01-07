@@ -229,22 +229,6 @@ rule modify_vcf:
         fi
         """
 
-rule whatshap_stats:
-    conda:
-        "envs/env.yml"
-    input:
-        phased_vcf = "mod_vcf/{individual}_mod.vcf.gz"
-    output:
-        tsv = "whatshap/{individual}.phased_stats.tsv",
-        block_list = "whatshap/{individual}.phased.blocks.txt",
-        gtf = "whatshap/{individual}.phased.blocks.gtf"
-    resources: 
-        runtime= 480
-    shell:
-        """
-        whatshap stats --tsv {output.tsv} --block-list {output.block_list} --gtf {output.gtf} {input.phased_vcf}
-        """
-
 rule whatshap_haplotag:
     conda:
         "envs/env.yml"
