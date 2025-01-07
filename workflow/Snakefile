@@ -23,6 +23,7 @@ combinations = [
 
 print("Loaded individuals:", individuals)
 print("Loaded labels:", labels)
+print("combinations:", combinations)
 
 # Restrict the values that wildcards can take from the config file
 wildcard_constraints:
@@ -97,7 +98,10 @@ rule all:
                condition=[comb["condition"] for comb in combinations],
                label=[comb["label"] for comb in combinations]),
         expand("whatshap/{individual}.phased_stats.tsv", individual=individuals),
-        "tag/dictionary_all.txt"
+        "tag/dictionary_all.txt",
+        "collapse/collapsed.gff",
+        "pigeon/sorted.gff",
+        "pigeon/pigeon_classification.txt"
 
 rule merge_individual_condition:
     conda:
@@ -234,12 +238,11 @@ rule whatshap_stats:
         tsv = "whatshap/{individual}.phased_stats.tsv",
         block_list = "whatshap/{individual}.phased.blocks.txt",
         gtf = "whatshap/{individual}.phased.blocks.gtf"
-    threads: config.get("threads", 2)
     resources: 
         runtime= 480
     shell:
         """
-        whatshap stats --threads {threads} --tsv {output.tsv} --block-list {output.block_list} --gtf {output.gtf} {input.phased_vcf}
+        whatshap stats --tsv {output.tsv} --block-list {output.block_list} --gtf {output.gtf} {input.phased_vcf}
         """
 
 rule whatshap_haplotag:
