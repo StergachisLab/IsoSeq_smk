@@ -97,7 +97,6 @@ rule all:
                individual=[comb["individual"] for comb in combinations],
                condition=[comb["condition"] for comb in combinations],
                label=[comb["label"] for comb in combinations]),
-        expand("whatshap/{individual}.phased_stats.tsv", individual=individuals),
         "tag/dictionary_all.txt",
         "collapse/collapsed.gff",
         "pigeon/sorted.gff",
