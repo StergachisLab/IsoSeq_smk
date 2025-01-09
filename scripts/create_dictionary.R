@@ -45,7 +45,7 @@ create_dictionary <- function(collapsed_file, haplotag_files, classification_fil
   
   dictionary <- collapsed_data %>%
     dplyr::left_join(classification_data) %>%
-    dplyr::left_join(haplotag_data, by = join_by("read_id" == "Readname")) 
+    dplyr::left_join(haplotag_data, by = join_by("read_id" == "ReadName")) 
   
 counts_hap <- dictionary %>%
   group_by(isoform, condition, haplotype) %>%
