@@ -31,7 +31,7 @@ process_haplotag <- function(files) {
 # Function to read and process pigeon classification
 process_classification <- function(filepath) {
   classification_data <- read.table(filepath, header = TRUE, sep = "\t") %>%
-    janitor::row_to_names(row_number = 1) %>%
+    #janitor::row_to_names(row_number = 1) %>%
     select(isoform, structural_category, associated_gene, associated_transcript, subcategory)
   return(classification_data)
 }
