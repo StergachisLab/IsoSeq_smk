@@ -46,7 +46,11 @@ create_dictionary <- function(collapsed_file, haplotag_files, classification_fil
 
   dictionary <- collapsed_data %>%
     dplyr::left_join(classification_data) %>%
-    dplyr::left_join(haplotag_data, by = join_by("read_id" == "ReadName")) %>%
+    dplyr::left_join(haplotag_data, by = join_by("read_id" == "ReadName")) 
+    
+    dictionary <- dictionary %>%
+      mutate_all(~replace(., is.na(.), 0)) %>%
+      rename_with(tolower) %>%
     dplyr::mutate(isoform = gsub("PB.", "in:Z:", isoform),
            structural_category = paste0("sc:Z:",structural_category),
            associated_gene = paste0("gn:Z:", associated_gene),
