@@ -21,9 +21,9 @@ combinations = [
     for lbl in labels[ind][cond]
 ]
 
-print("Loaded individuals:", individuals)
-print("Loaded labels:", labels)
-print("combinations:", combinations)
+#print("Loaded individuals:", individuals)
+#print("Loaded labels:", labels)
+#print("combinations:", combinations)
 
 # Restrict the values that wildcards can take from the config file
 wildcard_constraints:
@@ -97,7 +97,7 @@ rule all:
                individual=[comb["individual"] for comb in combinations],
                condition=[comb["condition"] for comb in combinations],
                label=[comb["label"] for comb in combinations]),
-        "tag/dictionary_all.txt",
+        expand("tag/dictionary_{individual}.txt", individual=[comb["individual"] for comb in combinations]),
         "collapse/collapsed.gff",
         "pigeon/sorted.gff",
         "pigeon/pigeon_classification.txt"
@@ -407,12 +407,12 @@ rule create_dictionary:
         haplotag=get_haplotag_files,
         classification="pigeon/pigeon_classification.txt"
     output:
-        dictionary="tag/dictionary_all.txt"
-    benchmark: "benchmark/create_dictionary/dictionary.txt"
+        dictionary="tag/dictionary_{individual}.txt"
+    benchmark: "benchmark/create_dictionary/dictionary_{individual}.txt"
     threads: config.get("threads", 4)
     resources: 
         runtime= 480,
-        mem_mb=600000
+        mem_mb=80000
     shell:
         """
         Rscript ./scripts/create_dictionary.R {input.collapsed} {input.haplotag} {input.classification}
@@ -423,7 +423,7 @@ rule add_tags_to_bam:
         "envs/env.yml"
     input:
         bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
-        dictionary="tag/dictionary_all.txt"
+        dictionary="tag/dictionary_{individual}.txt"
     output:
         bam="whatshap/{individual}_{condition}_{label}.tagged.bam",
         bai="whatshap/{individual}_{condition}_{label}.tagged.bam.bai"
