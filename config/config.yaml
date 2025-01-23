@@ -1,6 +1,6 @@
 individuals:
   UDN633333:
-    deepvariant_vcf: /gscratch/stergachislab/asedeno/data/Hank_MASseq/4-deepvariant/UDN318336.vcf
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00115/hg38/results/phased/PS00115.phased.vcf.gz
     untreated:
       non-cyclo_PS00344:
       - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00344/m84036_230518_222043_s4/IsoSeqX_bc09_5p--IsoSeqX_3p/PS00344.m84036_230518_222043_s4.IsoSeqX_bc09_5p--IsoSeqX_3p.flnc.bam
