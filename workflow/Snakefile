@@ -10,7 +10,7 @@ individuals = config["individuals"].keys()
 conditions = ["treated", "untreated"]
 # dictionary containing labels for each combination of individual and condition based on the configuration file
 labels = {individual: {condition: list(config["individuals"][individual][condition].keys())
-                       for condition in ["treated", "untreated"]}
+                       for condition in ["treated", "untreated"]}        
           for individual in individuals}
 
 # Define valid combinations of individual, condition, and label
@@ -25,7 +25,7 @@ combinations = [
 #print("Loaded labels:", labels)
 #print("combinations:", combinations)
 
-# Restrict the values that wildcards can take from the config file
+# Restrict the values that wildcards can take from the config file       
 wildcard_constraints:
     individual = "|".join(individuals),
     condition = "treated|untreated",
@@ -52,7 +52,7 @@ def get_vcf_path(wildcards):
 
 # get the merged input for an individual, condition and label
 def get_merge_input(wc):
-    if wc.label in config["individuals"][wc.individual][wc.condition]:
+    if wc.label in config["individuals"][wc.individual][wc.condition]:   
         return config["individuals"][wc.individual][wc.condition][wc.label]
     else:
         raise KeyError(f"Label {wc.label} not found for individual {wc.individual} and condition {wc.condition}.")
@@ -62,7 +62,7 @@ def combine_labels(wildcards):
     individual = wildcards.individual
     rtn = []
     for condition in ["treated", "untreated"]:
-        for label in config["individuals"][individual][condition]:
+        for label in config["individuals"][individual][condition]:       
             file = f"merged/{individual}_{condition}_{label}_labeled.bam"
             rtn.append(file)
     return rtn
@@ -72,7 +72,7 @@ def get_haplotag_files(wildcards):
     files = []
     for individual in config['individuals']:
         for condition in ["treated", "untreated"]:
-            for label in config['individuals'][individual][condition]:
+            for label in config['individuals'][individual][condition]:   
                 files.append(f"whatshap/{individual}_{condition}_{label}.haplotagged.txt")
     return files
 
@@ -82,20 +82,20 @@ def whatshap_outs(wc):
     rtn = []
     for individual in config['individuals']:
         for condition in ["treated", "untreated"]:
-            for label in config['individuals'][individual][condition]:
+            for label in config['individuals'][individual][condition]:   
                 rtn.append(template_f_path.format(
                     individual=individual,
                     condition=condition,
                     label=label
                 ))
-    return rtn 
+    return rtn
 
 rule all:
     input:
-        expand("whatshap/{individual}_{condition}_{label}.tagged.bam",
+        expand("whatshap/{individual}_{condition}_{label}.tagged.bam",   
                zip,
-               individual=[comb["individual"] for comb in combinations],
-               condition=[comb["condition"] for comb in combinations],
+               individual=[comb["individual"] for comb in combinations], 
+               condition=[comb["condition"] for comb in combinations],   
                label=[comb["label"] for comb in combinations]),
         expand("tag/dictionary_{individual}.txt", individual=[comb["individual"] for comb in combinations]),
         "collapse/collapsed.gff",
@@ -108,7 +108,7 @@ rule merge_individual_condition:
     input:
         get_merge_input
     output:
-        bam = "merged/{individual}_{condition}_{label}_merged.bam"
+        bam = "merged/{individual}_{condition}_{label}_merged.bam"       
     threads: config.get("threads", 4)
     resources:
         runtime = 480
@@ -153,12 +153,12 @@ rule label_reads_with_condition:
     conda:
         "envs/env.yml"
     input:
-        bam = "merged/{individual}_{condition}_{label}_merged.bam"
+        bam = "merged/{individual}_{condition}_{label}_merged.bam"       
     output:
-        bam = "merged/{individual}_{condition}_{label}_labeled.bam"
+        bam = "merged/{individual}_{condition}_{label}_labeled.bam"      
     benchmark: "benchmark/label_reads_condition/{individual}_{condition}_{label}.txt"
     threads: config.get("threads", 4)
-    resources: 
+    resources:
         runtime = 480
     shell:
         """
@@ -171,30 +171,30 @@ rule align_sample:
     conda:
         "envs/env.yml"
     input:
-        bam = "merged/{individual}_{condition}_{label}_labeled.bam"
+        bam = "merged/{individual}_{condition}_{label}_labeled.bam"      
     output:
-        aligned = "aligned/{individual}_{condition}_{label}_aligned.bam"
+        aligned = "aligned/{individual}_{condition}_{label}_aligned.bam" 
     threads: config.get("threads", 4)
-    resources: 
+    resources:
         runtime= 480,
         mem_mb=130000
     benchmark: "benchmark/align_samples/{individual}_{condition}_{label}.txt"
     shell:
         """
-        pbmm2 align {config[reference_genome]} {input.bam} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
+        pbmm2 align {config[reference_genome]} {input.bam} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO 
         """
 
 rule modify_rg:
     conda:
         "envs/env.yml"
     input:
-        bam = "aligned/{individual}_{condition}_{label}_aligned.bam"
+        bam = "aligned/{individual}_{condition}_{label}_aligned.bam"     
     output:
         bam = "aligned/{individual}_{condition}_{label}_modified_aligned.bam",
         bai = "aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai"
     threads: config.get("threads", 4)
-    resources: 
-        runtime= 480       
+    resources:
+        runtime= 480
     shell:
         """
         samtools addreplacerg -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' -o {output.bam} {input.bam}
@@ -231,7 +231,7 @@ rule modify_vcf:
 rule whatshap_haplotag:
     conda:
         "envs/env.yml"
-    resources: 
+    resources:
         runtime= 480,
         mem_mb=130000
     input:
@@ -240,17 +240,17 @@ rule whatshap_haplotag:
         reference = config['reference_genome']
     output:
         haplotagged_bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam",
-        list_txt = "whatshap/{individual}_{condition}_{label}.list.txt"
+        list_txt = "whatshap/{individual}_{condition}_{label}.list.txt"  
     shell:
-        """      
-        if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then
+        """
+        if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then 
             echo "Variants found. Running whatshap haplotag."
-            whatshap haplotag {input.phased_vcf_gz} {input.bam} \
+            whatshap haplotag {input.phased_vcf_gz} {input.bam} \        
                 -o {output.haplotagged_bam} --reference {input.reference} \
                 --output-haplotag-list {output.list_txt}
         else
             echo "No variants found or condition failed. Running add_hp0.sh."
-            ./scripts/add_hp0.sh {input.bam} {output.haplotagged_bam}
+            ./scripts/add_hp0.sh {input.bam} {output.haplotagged_bam}    
             touch {output.list_txt}
         fi
         """
@@ -263,11 +263,11 @@ rule extract_read_info:
     output:
         txt = "whatshap/{individual}_{condition}_{label}.haplotagged.txt"
     benchmark: "benchmark/extract_read_info/{individual}_{condition}_{label}.txt"
-    resources: 
+    resources:
         runtime= 480
     shell:
         """
-        python ./scripts/extract_read_info.py {input.bam} {output.txt}
+        python ./scripts/extract_read_info.py {input.bam} {output.txt}   
         """
 
 rule merge_samples:
@@ -277,11 +277,11 @@ rule merge_samples:
         bam = combine_labels
     output:
         bam = "merged/{individual}_all_conditions_merged.bam",
-        bai = "merged/{individual}_all_conditions_merged.bam.bai"
+        bai = "merged/{individual}_all_conditions_merged.bam.bai"        
     threads: config.get("threads", 4)
-    resources: 
+    resources:
         runtime= 480
-    benchmark: "benchmark/merge_samples/{individual}_all_conditions.txt"
+    benchmark: "benchmark/merge_samples/{individual}_all_conditions.txt" 
     shell:
         """
         samtools merge -@ {threads} {output.bam} {input.bam}
@@ -293,15 +293,15 @@ rule cluster:
         "envs/env.yml"
     input:
         bam = "merged/{individual}_all_conditions_merged.bam",
-        bai = "merged/{individual}_all_conditions_merged.bam.bai"
+        bai = "merged/{individual}_all_conditions_merged.bam.bai"        
     output:
         clustered = "clustered/{individual}_clustered.bam"
     threads: config.get("threads", 4)
-    resources: 
+    resources:
         runtime=1800,
         mem_mb=550000,
-        slurm_partition="compute-ultramem"
-    benchmark: "benchmark/cluster/{individual}_all_conditions.txt"
+        slurm_partition="cpu-g2"
+    benchmark: "benchmark/cluster/{individual}_all_conditions.txt"       
     shell:
         "isoseq3 cluster {input.bam} {output.clustered} --verbose -j {threads} --singletons"
 
@@ -313,12 +313,12 @@ rule align:
     output:
         aligned="aligned/{individual}_aligned.bam"
     threads: config.get("threads", 4)
-    resources: 
+    resources:
         runtime= 480,
         mem_mb=130000
     benchmark: "benchmark/align/{individual}_aligned.txt"
     shell:
-        "pbmm2 align {config[reference_genome]} {input} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO"
+        "pbmm2 align {config[reference_genome]} {input} {output.aligned} --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO"   
 
 rule label_transcripts:
     conda:
@@ -328,7 +328,7 @@ rule label_transcripts:
     output:
         bam = "aligned/{individual}_aligned_labeled.bam"
     threads: config.get("threads", 4)
-    resources: 
+    resources:
         runtime= 480,
         mem_mb=80000
     shell:
@@ -346,10 +346,10 @@ rule merge_all_aligned:
     output:
         "aligned/all_individuals_aligned_merged.bam"
     threads: config.get("threads", 4)
-    resources: 
+    resources:
         runtime= 480,
         mem_mb=80000
-    benchmark: "benchmark/merge_all_aligned/all_aligned_merged.txt"
+    benchmark: "benchmark/merge_all_aligned/all_aligned_merged.txt"      
     shell:
         """
         samtools merge -@ {threads} {output} {input}
@@ -367,7 +367,7 @@ rule collapse:
         collapsed_readstat="collapse/collapsed.read_stat.txt",
         collapsed_count="collapse/collapsed.flnc_count.txt"
     threads: config.get("threads", 4)
-    resources: 
+    resources:
         runtime= 480,
         mem_mb=80000
     benchmark: "benchmark/collapse/collapse.txt"
@@ -388,13 +388,13 @@ rule pigeon_process:
         pigeon_annot=config['pigeon_annot']
     benchmark: "benchmark/pigeon_process/pigeon.txt"
     threads: config.get("threads", 4)
-    resources: 
+    resources:
         runtime= 480,
         mem_mb=80000
     shell:
         """
         pigeon sort {input.collapsed_gff} -o {output.sorted_gff}
-        pigeon classify {output.sorted_gff} {params.pigeon_annot} {config[reference_genome]} --flnc {input.collapsed_count} -d pigeon -o 'pigeon'
+        pigeon classify {output.sorted_gff} {params.pigeon_annot} {config[reference_genome]} --flnc {input.collapsed_count} -d pigeon -o 'pigeon' 
         pigeon filter {output.classification}
         pigeon report pigeon/pigeon_classification.filtered_lite_classification.txt {output.report}
         """
@@ -404,15 +404,15 @@ rule create_dictionary:
         "envs/r-base.yml"
     input:
         collapsed="collapse/collapsed.read_stat.txt",
-        haplotag=get_haplotag_files,
+        haplotag="whatshap/",
         classification="pigeon/pigeon_classification.txt"
     output:
         dictionary="tag/dictionary_{individual}.txt"
-    benchmark: "benchmark/create_dictionary/dictionary_{individual}.txt"
+    benchmark: "benchmark/create_dictionary/dictionary_{individual}.txt" 
     threads: config.get("threads", 4)
-    resources: 
-        runtime= 480,
-        mem_mb=80000
+    resources:
+        runtime= 980,
+        mem_mb=500000,slurm_partition="cpu-g2"
     shell:
         """
         Rscript ./scripts/create_dictionary.R {input.collapsed} {input.haplotag} {input.classification}
@@ -422,14 +422,14 @@ rule add_tags_to_bam:
     conda:
         "envs/env.yml"
     input:
-        bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
+        bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam", 
         dictionary="tag/dictionary_{individual}.txt"
     output:
-        bam="whatshap/{individual}_{condition}_{label}.tagged.bam",
-        bai="whatshap/{individual}_{condition}_{label}.tagged.bam.bai"
+        bam="whatshap/{individual}_{condition}_{label}.tagged.bam",      
+        bai="whatshap/{individual}_{condition}_{label}.tagged.bam.bai"   
     benchmark: "benchmark/add_tags_to_bam/{individual}_{condition}_{label}_tagged.txt"
     threads: config.get("threads", 4)
-    resources: 
+    resources:
         runtime= 480,
         mem_mb=80000
     shell:
