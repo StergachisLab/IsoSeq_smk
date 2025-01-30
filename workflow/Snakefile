@@ -401,7 +401,7 @@ rule pigeon_process:
 
 rule create_dictionary:
     conda:
-        "envs/r-base.yml"
+        "envs/python-env.yml"
     input:
         collapsed="collapse/collapsed.read_stat.txt",
         haplotag="whatshap/",
@@ -415,7 +415,7 @@ rule create_dictionary:
         mem_mb=500000,slurm_partition="cpu-g2"
     shell:
         """
-        Rscript ./scripts/create_dictionary.R {input.collapsed} {input.haplotag} {input.classification}
+        python ./scripts/create_dictionary.py {input.collapsed} {input.haplotag} {input.classification}
         """
 
 rule add_tags_to_bam:
