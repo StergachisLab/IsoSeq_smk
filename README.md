@@ -31,10 +31,10 @@ conda create -n isoseq-smk python=3.11
 # Activate the conda environment
 conda activate isoseq-smk
 
-# Install pip, snakemake, and snakemake-executor-plugin-slurm
-conda install pip
-pip install snakemake
-pip install snakemake-executor-plugin-slurm
+# Install snakemake, and snakemake-executor-plugin-slurm
+conda install bioconda::snakemake
+conda install bioconda::snakemake-executor-plugin-slurm
+
 ```
 
 ## Usage
