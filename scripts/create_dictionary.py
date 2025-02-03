@@ -29,14 +29,19 @@ def process_haplotagged(filepath):
     df = dd.read_csv(filepath, sep="\t", dtype=str)  # Lazy loading
 
     # Extract sample name from ReadName
-    df["sample"] = df["ReadName"].str.extract(r"^(.*?)_(?:treated|untreated)_.*")
+    # FIX: Use expand=False to return a single Series (instead of a DataFrame)
+    df["sample"] = df["ReadName"].str.extract(r"^(.*?)_(?:treated|untreated)_.*", expand=False)
     
     # Assign condition
-    df["condition"] = dd.np.where(df["ReadName"].str.contains("_cyclo"), "cyclo",
-                       dd.np.where(df["ReadName"].str.contains("_non-cyclo"), "non-cyclo", None))
+    df["condition"] = dd.np.where(
+        df["ReadName"].str.contains("_cyclo"), 
+        "cyclo",
+        dd.np.where(df["ReadName"].str.contains("_non-cyclo"), "non-cyclo", None)
+    )
 
     # Extract identifier
-    df["identifier"] = df["ReadName"].str.extract(r"(PS[^_]+)")
+    # FIX: Use expand=False here as well if you only want a single capturing group
+    df["identifier"] = df["ReadName"].str.extract(r"(PS[^_]+)", expand=False)
     
     return df
 
@@ -60,19 +65,32 @@ def create_dictionary_sample(collapsed_data, classification_data, hap_data):
     dictionary["subcategory"] = "sb:Z:" + dictionary["subcategory"].astype(str)
 
     dictionary = dictionary.drop_duplicates()
-    dictionary = dictionary[["read_id", "haplotype", "isoform", "condition", "sample",
-                             "structural_category", "associated_gene", "associated_transcript", "subcategory"]]
+    dictionary = dictionary[
+        ["read_id", "haplotype", "isoform", "condition", "sample",
+         "structural_category", "associated_gene", "associated_transcript", "subcategory"]
+    ]
 
     # Aggregate counts
-    counts_hap = dictionary.groupby(["sample", "isoform", "condition", "haplotype"]).size().reset_index(name="n_hap_cond")
-    counts = dictionary.groupby(["sample", "isoform", "condition"]).size().reset_index(name="n_cond")
+    counts_hap = dictionary.groupby(["sample", "isoform", "condition", "haplotype"]) \
+                           .size() \
+                           .reset_index(name="n_hap_cond")
+    counts = dictionary.groupby(["sample", "isoform", "condition"]) \
+                       .size() \
+                       .reset_index(name="n_cond")
 
-    counts_hap_wide = counts_hap.pivot_table(index=["sample", "isoform", "haplotype"],
-                                             columns="condition",
-                                             values="n_hap_cond", fill_value=0).reset_index()
-    counts_wide = counts.pivot_table(index=["sample", "isoform"],
-                                     columns="condition",
-                                     values="n_cond", fill_value=0).reset_index()
+    counts_hap_wide = counts_hap.pivot_table(
+        index=["sample", "isoform", "haplotype"],
+        columns="condition",
+        values="n_hap_cond",
+        fill_value=0
+    ).reset_index()
+
+    counts_wide = counts.pivot_table(
+        index=["sample", "isoform"],
+        columns="condition",
+        values="n_cond",
+        fill_value=0
+    ).reset_index()
 
     # Rename for final output
     for df in [counts_hap_wide, counts_wide]:
@@ -80,8 +98,10 @@ def create_dictionary_sample(collapsed_data, classification_data, hap_data):
         df["iso_hap_cyclo_counts"] = "hc:i:" + df.get("cyclo", 0).astype(str)
         df.drop(columns=["cyclo", "non-cyclo"], errors="ignore", inplace=True)
 
-    dictionary = dictionary.merge(counts_hap_wide, on=["sample", "isoform", "haplotype"], how="left")\
-                           .merge(counts_wide, on=["sample", "isoform"], how="left")
+    dictionary = (
+        dictionary.merge(counts_hap_wide, on=["sample", "isoform", "haplotype"], how="left")
+                  .merge(counts_wide, on=["sample", "isoform"], how="left")
+    )
 
     return dictionary
 
@@ -89,7 +109,6 @@ def create_dictionary_sample(collapsed_data, classification_data, hap_data):
 # -----------------------
 # 2) Main Processing
 # -----------------------
-
 def process_sample(sample_name, files, collapsed_data, classification_data, output_dir):
     print(f"Processing sample: {sample_name}")
     
@@ -128,12 +147,19 @@ def main():
 
     # Group files by sample
     df_files = pd.DataFrame({"file_path": haplotag_files})
-    df_files["sample"] = df_files["file_path"].apply(lambda x: re.sub(r"^(.*)_(?:treated|untreated).*", r"\1", os.path.basename(x)))
+    df_files["sample"] = df_files["file_path"].apply(
+        lambda x: re.sub(r"^(.*)_(?:treated|untreated).*", r"\1", os.path.basename(x))
+    )
 
     files_by_sample = df_files.groupby("sample")["file_path"].apply(list).reset_index()
 
     # Use Dask's Delayed for parallel processing
-    tasks = [delayed(process_sample)(row["sample"], row["file_path"], collapsed_data, classification_data, output_dir) for _, row in files_by_sample.iterrows()]
+    tasks = [
+        delayed(process_sample)(
+            row["sample"], row["file_path"], collapsed_data, classification_data, output_dir
+        )
+        for _, row in files_by_sample.iterrows()
+    ]
 
     with ProgressBar():
         compute(*tasks)
