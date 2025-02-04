@@ -2,178 +2,224 @@
 # Adriana Sedeno
 # Create dictionary files, one per haplotag.
 
-library(dplyr)
-library(data.table)
-library(stringr)
-library(tidyr)
+##############################################################################
+# create_dictionary.R
+#
+# Optimized to read collapsed_data and classification_data once, then
+# process each haplotag file in parallel if >4 rows, creating a separate
+# output dictionary per haplotag file.
+#
+# Usage:
+#   Rscript create_dictionary.R [collapsed_file] [haplotag_dir] [classification_file] [threads] [output_dir]
+#
+# Example:
+#   Rscript create_dictionary.R collapse/collapsed.read_stat.txt whatshap/ pigeon/pigeon_classification.txt 4 tag
+#
+##############################################################################
 
-# ------------------
-# 1) Helper functions
-# ------------------
+suppressPackageStartupMessages({
+  library(data.table)
+  library(stringr)
+  library(parallel)     # or future.apply if you prefer cross-platform
+})
 
-## Process the "collapsed" data file
-process_collapsed <- function(filepath) {
-  collapsed_data <- read.table(filepath, header = TRUE,
-                               col.names = c("read_id", "isoform"))
-  return(collapsed_data)
+# 1) Parse arguments
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) < 5) {
+  stop("Usage: Rscript create_dictionary.R [collapsed_file] [haplotag_dir] [classification_file] [threads] [output_dir]")
 }
 
-## Process the "classification" file
-process_classification <- function(filepath) {
-  classification_data <- read.table(filepath, header = TRUE, sep = "\t") %>%
-    dplyr::select(isoform, structural_category, associated_gene, associated_transcript, subcategory)
-  return(classification_data)
-}
+collapsed_file       <- args[1]
+haplotag_dir         <- args[2]
+classification_file  <- args[3]
+n_threads            <- as.integer(args[4])
+output_dir           <- args[5]
 
-## The core logic to merge collapsed + classification + a single haplotag
-create_dictionary_sample <- function(
-  collapsed_data, classification_data, hap_data
-) {
+cat("collapsed_file:      ", collapsed_file,      "\n")
+cat("haplotag_dir:        ", haplotag_dir,        "\n")
+cat("classification_file: ", classification_file, "\n")
+cat("threads:             ", n_threads,           "\n")
+cat("output_dir:          ", output_dir,          "\n\n")
 
-collapsed_sub <- collapsed_data %>%
-    dplyr::semi_join(hap_data, by = join_by("read_id" == "ReadName"))
+# Ensure output folder exists
+dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
-classification_sub <- classification_data %>%
-    dplyr::semi_join(collapsed_sub, by = "isoform")
+# 2) Load the large files once ----------------------------------------------
+cat("Reading collapsed_data...\n")
+collapsed_data <- fread(
+  collapsed_file,
+  header = TRUE,
+  col.names = c("read_id", "isoform")
+)
+
+cat("Reading classification_data...\n")
+classification_data <- fread(
+  classification_file,
+  header = TRUE,
+  sep = "\t",
+  select = c("isoform", "structural_category", "associated_gene", "associated_transcript", "subcategory")
+)
+
+# 3) Define the core logic as a function ------------------------------------
+create_dictionary_sample <- function(collapsed_data, classification_data, hap_data) {
+  # Convert everything to data.table (if not already)
+  setDT(collapsed_data)
+  setDT(classification_data)
+  setDT(hap_data)
+
+  # 1) Filter
+  # We only keep hap_data that merges with collapsed_data
+  #   i.e. read_id in collapsed_data matches ReadName in hap_data
+  setkey(collapsed_data, read_id)
+  setkey(hap_data, ReadName)
+  collapsed_sub <- hap_data[collapsed_data, nomatch = 0L, on = .(ReadName = read_id)]
+
+  # Then classification_data must match isoform in collapsed_sub
+  isoform_keep <- unique(collapsed_sub$isoform)
+  classification_sub <- classification_data[isoform %in% isoform_keep]
 
   # 2) Join everything
-  dictionary <- collapsed_sub %>%
-    dplyr::left_join(classification_sub, by = "isoform") %>%
-    dplyr::left_join(hap_data, by = dplyr::join_by("read_id" == "ReadName")) %>%
-    mutate_all(~ replace(., is.na(.), 0)) %>%
-    rename_with(tolower) %>%
-    dplyr::mutate(
-      isoform = gsub("PB.", "in:Z:", isoform),
-      structural_category = paste0("sc:Z:", structural_category),
-      associated_gene = paste0("gn:Z:", associated_gene),
-      associated_transcript = paste0("tn:Z:", associated_transcript),
-      subcategory = paste0("sb:Z:", subcategory)
-    ) %>%
-    distinct() %>%
-    dplyr::select(read_id, haplotype, isoform, condition, sample,
-                  structural_category, associated_gene,
-                  associated_transcript, subcategory)
+  setnames(collapsed_sub, "ReadName", "read_id_original")
+  dictionary <- merge(
+    x = collapsed_sub,
+    y = classification_sub,
+    by = "isoform",
+    all.x = TRUE
+  )
+
+  dictionary <- merge(
+    x = dictionary,
+    y = hap_data,
+    by.x = "read_id",
+    by.y = "ReadName",
+    all.x = TRUE,
+    suffixes = c("", "_hap")
+  )
+
+  # Replace NA with 0
+  for (j in names(dictionary)) {
+    set(dictionary, which(is.na(dictionary[[j]])), j, 0)
+  }
+
+  # 3) Rename columns
+  dictionary[, isoform := sub("PB\\.", "in:Z:", isoform)]
+  dictionary[, structural_category := paste0("sc:Z:", structural_category)]
+  dictionary[, associated_gene := paste0("gn:Z:", associated_gene)]
+  dictionary[, associated_transcript := paste0("tn:Z:", associated_transcript)]
+  dictionary[, subcategory := paste0("sb:Z:", subcategory)]
+
+  # Distinct rows
+  setkeyv(dictionary, c("read_id", "isoform", "haplotype", "condition", "sample",
+                        "structural_category", "associated_gene", "associated_transcript", "subcategory"))
+  dictionary <- unique(dictionary)
 
   # 4) Build additional stats
-  counts_hap <- dictionary %>%
-  group_by(sample, isoform, condition, haplotype) %>%
-  summarize(n_hap_cond = n()) %>%
-  ungroup() %>%
-    tidyr::pivot_wider(
-    id_cols = c(sample, isoform, haplotype),
-    names_from = condition,
-    values_from = n_hap_cond,
-    values_fill = 0) %>%
-  mutate(
-    cyclo      = if ("cyclo"      %in% colnames(.)) cyclo      else 0,
-    `non-cyclo` = if ("non-cyclo" %in% colnames(.)) `non-cyclo` else 0
-  ) %>%
-  mutate(
-    iso_hap_noncyclo_counts = paste0("hn:i:", `non-cyclo`),
-    iso_hap_cyclo_counts    = paste0("hc:i:", cyclo)
-  ) %>%
-  select(-cyclo, -`non-cyclo`)
+  # a) counts_hap
+  counts_hap <- dictionary[, .(n_hap_cond = .N), by = .(sample, isoform, condition, haplotype)]
+  # Reshape wide
+  counts_hap_wide <- dcast(
+    counts_hap,
+    sample + isoform + haplotype ~ condition,
+    value.var = "n_hap_cond",
+    fill = 0
+  )
+  if (!("cyclo" %in% names(counts_hap_wide))) counts_hap_wide[, cyclo := 0]
+  if (!("non-cyclo" %in% names(counts_hap_wide))) counts_hap_wide[, `non-cyclo` := 0]
 
-counts <- dictionary %>%
-  group_by(sample, isoform, condition) %>%
-  summarize(n_cond = n()) %>%
-  ungroup() %>%
-    tidyr::pivot_wider(
-    id_cols = c(sample, isoform),
-    names_from = condition,
-    values_from = n_cond,
-    values_fill = 0) %>%
-  mutate(
-    cyclo      = if ("cyclo"      %in% colnames(.)) cyclo      else 0,
-    `non-cyclo` = if ("non-cyclo" %in% colnames(.)) `non-cyclo` else 0
-  ) %>%
-  mutate(
-    iso_noncyclo_counts = paste0("hn:i:", `non-cyclo`),
-    iso_cyclo_counts    = paste0("hc:i:", cyclo)
-  ) %>%
-  select(-cyclo, -`non-cyclo`)
+  counts_hap_wide[, iso_hap_noncyclo_counts := paste0("hn:i:", `non-cyclo`)]
+  counts_hap_wide[, iso_hap_cyclo_counts := paste0("hc:i:", cyclo)]
+  counts_hap_wide[, c("cyclo", "non-cyclo") := NULL]
 
+  # b) counts
+  counts_ <- dictionary[, .(n_cond = .N), by = .(sample, isoform, condition)]
+  counts_wide <- dcast(
+    counts_,
+    sample + isoform ~ condition,
+    value.var = "n_cond",
+    fill = 0
+  )
+  if (!("cyclo" %in% names(counts_wide))) counts_wide[, cyclo := 0]
+  if (!("non-cyclo" %in% names(counts_wide))) counts_wide[, `non-cyclo` := 0]
 
-  dictionary <- dictionary %>%
-    left_join(counts_hap) %>%
-    left_join(counts)
+  counts_wide[, iso_noncyclo_counts := paste0("hn:i:", `non-cyclo`)]
+  counts_wide[, iso_cyclo_counts := paste0("hc:i:", cyclo)]
+  counts_wide[, c("cyclo", "non-cyclo") := NULL]
+
+  # Merge back
+  dictionary <- merge(dictionary, counts_hap_wide,
+                      by = c("sample", "isoform", "haplotype"), all.x = TRUE)
+  dictionary <- merge(dictionary, counts_wide,
+                      by = c("sample", "isoform"), all.x = TRUE)
+
+  # Final reorder
+  out_cols <- c("read_id", "haplotype", "isoform", "condition", "sample",
+                "structural_category", "associated_gene", "associated_transcript", "subcategory",
+                "iso_hap_noncyclo_counts", "iso_hap_cyclo_counts",
+                "iso_noncyclo_counts", "iso_cyclo_counts")
+  out_cols <- intersect(out_cols, names(dictionary))
+  setcolorder(dictionary, out_cols)
 
   return(dictionary)
 }
 
-# -------------------------
-# 2) Main: process arguments
-# -------------------------
+# 4) List haplotag files, keep only those with >4 rows ----------------------
+haplotag_files <- list.files(haplotag_dir, pattern = "haplotagged.txt", full.names = TRUE)
+cat("Found", length(haplotag_files), "haplotag files in", haplotag_dir, "\n")
 
-args <- commandArgs(trailingOnly = TRUE)
-collapsed_file <- args[1]
-haplotag_dir   <- args[2]
-classification_file <- args[3]
+valid_files <- vector("list", length(haplotag_files))
+valid_count <- 0
 
-cat("collapsed_file: ", collapsed_file, "\n")
-cat("haplotag_dir:   ", haplotag_dir,   "\n")
-cat("classification: ", classification_file, "\n")
-
-# ------------------------
-# 3) Read smaller input once
-# ------------------------
-collapsed_data <- process_collapsed(collapsed_file)
-classification_data <- process_classification(classification_file)
-
-# Create output folder if needed
-dir.create("tag", showWarnings = FALSE)
-
-# ----------------------------
-# 4) Loop over haplotag files
-# ----------------------------
-haplotag_files <- list.files(haplotag_dir,
-                             pattern = "haplotagged.txt",
-                             full.names = TRUE)
-
-cat("Found", length(haplotag_files), "haplotag files.\n")
-
-df_files <- tibble(file_path = haplotag_files) %>%
-  mutate(sample = sub("^(.*)_(?:treated|untreated).*", "\\1", file_path)) %>%
-  mutate(sample = sub("whatshap//", "", sample))
-
-
-# 3. Group by sample, then store the file paths in a list column
-files_by_sample <- df_files %>%
-  group_by(sample) %>%
-  summarise(file_list = list(file_path))
-
-for (i in seq_len(nrow(files_by_sample))) {
-  sample_name <- files_by_sample$sample[i]
-  these_files <- files_by_sample$file_list[[i]]
-
-  cat("Processing sample:", sample_name, "\n")
-  cat("  Haplotag files for this sample:", these_files, "\n")
-
-  hap_data <- purrr::map_dfr(these_files, ~ {
-    data.table::fread(.x, header = TRUE, stringsAsFactors = FALSE) %>%
-      mutate(
-        sample = sub("^(.*?)_(?:treated|untreated)_.*", "\\1", ReadName),
-        condition = case_when(
-          str_detect(ReadName, "_cyclo") ~ "cyclo",
-          str_detect(ReadName, "_non-cyclo") ~ "non-cyclo",
-          TRUE ~ NA_character_
-        ),
-        identifier = str_extract(ReadName, "PS[^_]+")
-      )
-  })
-
- dict_one <- create_dictionary_sample(
-    collapsed_data,
-    classification_data,
-    hap_data = hap_data
-  )
-
-  # 4) Write out a single dictionary file for this sample
-  out_name <- paste0("tag/dictionary_", sample_name, ".txt")
-  write.table(dict_one, file = out_name,
-              sep = "\t", row.names = FALSE, quote = FALSE)
+cat("Checking number of rows in each haplotag file...\n")
+for (f in haplotag_files) {
+  # For speed, we can quickly read the first 5 lines to see if it has >4 data lines
+  # Or read the entire file if it's not huge. We'll do a minimal approach:
+  n_lines <- as.integer(system2("wc", c("-l", shQuote(f)), stdout = TRUE))
+  # If we trust that all lines are data lines (has a header?), adjust logic accordingly
+  if (n_lines > 5) {
+    valid_count <- valid_count + 1
+    valid_files[[valid_count]] <- f
+  }
 }
+valid_files <- valid_files[seq_len(valid_count)]
+cat("Found", valid_count, "haplotag files with >=5 lines.\n\n")
 
+# 5) Process in parallel per file -------------------------------------------
+# If on Windows, you can't use mclapply reliably. Switch to lapply or future_lapply.
+# For Mac/Linux HPC, mclapply is usually fine.
 
+num_cores <- min(n_threads, valid_count)
+cat("Using", num_cores, "cores\n")
 
-cat("Done!\n")
+mclapply(valid_files, function(f) {
+  # Read hap_data
+  hap_data <- fread(f, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+
+  # If < 5 rows in the actual data (not counting the header), skip
+  # (We've already done a quick check, but let's be safe.)
+  if (nrow(hap_data) < 5) {
+    message("Skipping file with <5 data rows: ", f)
+    return(NULL)
+  }
+
+  sample_name <- sub("^(.*)_(?:treated|untreated).*", "\\1", basename(f))
+  sample_name <- sub(".haplotagged.txt", "", sample_name)  # remove trailing extension
+  # parse sample from ReadName:
+  hap_data[, sample := sub("^(.*?)_(?:treated|untreated)_.*", "\\1", ReadName)]
+  hap_data[, condition := fifelse(str_detect(ReadName, "_cyclo"), "cyclo",
+                           fifelse(str_detect(ReadName, "_non-cyclo"), "non-cyclo", NA_character_))]
+  hap_data[, identifier := str_extract(ReadName, "PS[^_]+")]
+
+  # Create the dictionary data.table
+  dict_dt <- create_dictionary_sample(collapsed_data, classification_data, hap_data)
+
+  # Write output in <output_dir>/dictionary_<basename>.txt
+  # Or we can do dictionary_{sample_name}.txt if you want one dictionary per haplotag file.
+  out_base <- paste0("dictionary_", sample_name, ".txt")
+  out_file <- file.path(output_dir, out_base)
+
+  message("Writing dictionary for file: ", f, "\n  -> ", out_file)
+  fwrite(dict_dt, file = out_file, sep = "\t", quote = FALSE, row.names = FALSE)
+  return(out_file)
+}, mc.cores = num_cores)
+
+cat("\nDone! All dictionary files created in:", output_dir, "\n")
