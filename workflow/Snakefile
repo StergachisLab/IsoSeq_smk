@@ -156,7 +156,7 @@ rule merge_individual_condition:
             temp_downsampled_bam=$(mktemp)
             fraction=$(echo "scale=6; $downsample_reads / $total_reads" | bc)
             fraction=$(echo "$fraction" | sed 's/^0//')
-            samtools view -s 42$fraction -b {output.bam} > "$temp_downsampled_bam"      
+            samtools view -s 42$fraction -b {output.bam} > "$temp_downsampled_bam"
             mv "$temp_downsampled_bam" {output.bam}
             echo "Downsampling completed and replaced the original merged BAM."
         else
@@ -172,7 +172,7 @@ rule label_reads_with_condition:
         bam = "merged/{individual}_{condition}_{label}_merged.bam"
     output:
         bam = "merged/{individual}_{condition}_{label}_labeled.bam"
-    benchmark: "benchmark/label_reads_condition/{individual}_{condition}_{label}.txt"   
+    benchmark: "benchmark/label_reads_condition/{individual}_{condition}_{label}.txt"
     threads: config.get("threads", 4)
     resources:
         runtime = 480
@@ -199,7 +199,7 @@ rule align_sample:
     shell:
         """
         pbmm2 align {config[reference_genome]} {input.bam} {output.aligned} \
-            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO       
+            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
         """
 
 
@@ -210,7 +210,7 @@ rule modify_rg:
         bam = "aligned/{individual}_{condition}_{label}_aligned.bam"
     output:
         bam = "aligned/{individual}_{condition}_{label}_modified_aligned.bam",
-        bai = "aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai"       
+        bai = "aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai"
     threads: config.get("threads", 4)
     resources:
         runtime = 480
@@ -238,8 +238,8 @@ rule modify_vcf:
         if [ ! -s "{input.vcf}" ]; then
             # No VCF provided, create an empty one
             (
-                echo "##fileformat=VCFv4.2";
-                echo "#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT UnnamedSample"      
+                echo "##fileformat=VCFv4.2"; 
+                echo "#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT UnnamedSample"
             ) | bgzip -c > {output.mod_vcf} && tabix -p vcf {output.mod_vcf}
         else
             # Process the existing VCF
@@ -263,7 +263,7 @@ rule whatshap_haplotag:
         phased_vcf_gz = "mod_vcf/{individual}_mod.vcf.gz",
         reference = config['reference_genome']
     output:
-        haplotagged_bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam",  
+        haplotagged_bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam",
         list_txt = "whatshap/{individual}_{condition}_{label}.list.txt"
     shell:
         """
@@ -287,7 +287,7 @@ rule extract_read_info:
         bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam"
     output:
         txt = "whatshap/{individual}_{condition}_{label}.haplotagged.txt"
-    benchmark: "benchmark/extract_read_info/{individual}_{condition}_{label}.txt"       
+    benchmark: "benchmark/extract_read_info/{individual}_{condition}_{label}.txt"
     resources:
         runtime = 480
     shell:
@@ -350,7 +350,7 @@ rule align:
     shell:
         """
         pbmm2 align {config[reference_genome]} {input} {output.aligned} \
-            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO       
+            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
         """
 
 
@@ -474,12 +474,12 @@ rule add_tags_to_bam:
     output:
         bam = "whatshap/{individual}_{condition}_{label}.tagged.bam",
         bai = "whatshap/{individual}_{condition}_{label}.tagged.bam.bai"
-    benchmark: "benchmark/add_tags_to_bam/{individual}_{condition}_{label}_tagged.txt"  
+    benchmark: "benchmark/add_tags_to_bam/{individual}_{condition}_{label}_tagged.txt"
     threads: config.get("threads", 4)
     resources:
         runtime = 480,
         mem_mb = 80000
     shell:
         """
-        ./scripts/add_tags_to_bam.sh {input.bam} {input.dictionary} {output.bam}        
+        ./scripts/add_tags_to_bam.sh {input.bam} {input.dictionary} {output.bam}
         """

@@ -1,10 +1,8 @@
 #!/usr/bin/env Rscript
-# Adriana Sedeno
-# Create dictionary files, one per haplotag.
 
 ##############################################################################
 # create_dictionary.R
-#
+# 
 # Optimized to read collapsed_data and classification_data once, then
 # process each haplotag file in parallel if >4 rows, creating a separate
 # output dictionary per haplotag file.
@@ -79,6 +77,8 @@ create_dictionary_sample <- function(collapsed_data, classification_data, hap_da
   classification_sub <- classification_data[isoform %in% isoform_keep]
 
   # 2) Join everything
+  # collapsed_sub is already combined, but let's do a data.table merge
+  # We'll rename columns for clarity after merges
   setnames(collapsed_sub, "ReadName", "read_id_original")
   dictionary <- merge(
     x = collapsed_sub,
@@ -87,6 +87,11 @@ create_dictionary_sample <- function(collapsed_data, classification_data, hap_da
     all.x = TRUE
   )
 
+  # data.table merges in place, but we can do a second merge for haplotype info
+  # Actually, collapsed_sub *already* has the columns from hap_data if we do a merge
+  # But let's be consistent with your original code's second left_join
+  # (In data.table, we can skip it if collapsed_sub includes all columns from hap_data).
+  # For demonstration, let's assume we only had partial columns from hap_data:
   dictionary <- merge(
     x = dictionary,
     y = hap_data,
@@ -171,15 +176,32 @@ valid_count <- 0
 
 cat("Checking number of rows in each haplotag file...\n")
 for (f in haplotag_files) {
-  # For speed, we can quickly read the first 5 lines to see if it has >4 data lines
-  # Or read the entire file if it's not huge. We'll do a minimal approach:
-  n_lines <- as.integer(system2("wc", c("-l", shQuote(f)), stdout = TRUE))
-  # If we trust that all lines are data lines (has a header?), adjust logic accordingly
-  if (n_lines > 5) {
+  if (!file.exists(f)) {
+    cat("WARNING: File does not exist -", f, "\n")
+    next  # Skip to the next file
+  }
+
+  # Read only the first 6 rows
+  temp_data <- tryCatch(
+    fread(f, nrows = 6, header = TRUE, sep = "\t", showProgress = FALSE),
+    error = function(e) NULL
+  )
+
+  # If fread failed (e.g., file is empty/corrupt), skip this file
+  if (is.null(temp_data)) {
+    cat("WARNING: Could not read file -", f, "\n")
+    next
+  }
+
+  # Count rows (subtract 1 for header)
+  n_lines <- nrow(temp_data)
+
+  if (n_lines > 4) {  # Ensure at least 5 data rows (excluding header)
     valid_count <- valid_count + 1
     valid_files[[valid_count]] <- f
   }
 }
+
 valid_files <- valid_files[seq_len(valid_count)]
 cat("Found", valid_count, "haplotag files with >=5 lines.\n\n")
 
@@ -201,6 +223,11 @@ mclapply(valid_files, function(f) {
     return(NULL)
   }
 
+  # We do the same logic as your original code for sample, condition, etc.
+  # The user typically extracts these from ReadName or from the file name.
+  # For demonstration, let's parse from the file name:
+  # dictionary_{sample}.txt or something similar
+  # We'll guess a sample name from the file name:
   sample_name <- sub("^(.*)_(?:treated|untreated).*", "\\1", basename(f))
   sample_name <- sub(".haplotagged.txt", "", sample_name)  # remove trailing extension
   # parse sample from ReadName:
