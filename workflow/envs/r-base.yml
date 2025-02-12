@@ -1,0 +1,21 @@
+name: r-base
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - r-base=4.2
+  - r-dplyr
+  - r-tidyr
+  - r-ggplot2
+  - r-yaml
+  - r-readr
+  - r-rmarkdown
+  - r-devtools
+  - r-purrr
+  - r-janitor
+  - r-data.table
+  - r-stringr
+  - r-tidyverse
+  - r-future.apply
+  - r-stringi
