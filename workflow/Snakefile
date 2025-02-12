@@ -482,3 +482,4 @@ rule add_tags_to_bam:
     shell:
         """
         ./scripts/add_tags_to_bam.sh {input.bam} {input.dictionary} {output.bam}
+        """
