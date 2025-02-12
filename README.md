@@ -25,15 +25,18 @@ isoform_cyclo_counts (cc:i:)
 You will need snakemake and the snakemake executor plugin to distribute jobs on a cluster. 
 
 ```
+# 1) Create the conda environment by using the provided yml file
+# conda env create --file snakemake_env.yml
+
+#Alternatively (although it might have some dependencies missing):
 # Create the conda environment
-conda create -n isoseq-smk python=3.11
-
-# Activate the conda environment
-conda activate isoseq-smk
-
+conda create -n snakemake python=3.11
 # Install snakemake, and snakemake-executor-plugin-slurm
 conda install bioconda::snakemake
 conda install bioconda::snakemake-executor-plugin-slurm
+
+# 2) Activate the conda environment
+conda activate snakemake
 
 ```
 
