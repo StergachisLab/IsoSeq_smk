@@ -449,10 +449,10 @@ rule create_dictionary:
         "envs/r-base.yml"
     input:
         collapsed = "collapse/collapsed.read_stat.txt",
-        haplotag = "whatshap/",
+        haplotag = get_haplotag_files,  # ✅ Using the function as it was
         classification = "pigeon/pigeon_classification.txt"
     output:
-        dictionary = "tag/dictionary_{individual}.txt"
+        "tag/dictionary_{individual}.txt"
     benchmark: "benchmark/create_dictionary/dictionary_{individual}.txt"
     threads: config.get("threads", 4)
     resources:
@@ -461,9 +461,8 @@ rule create_dictionary:
         slurm_partition = "cpu-g2"
     shell:
         """
-        Rscript ./scripts/create_dictionary.R {input.collapsed} {input.haplotag} {input.classification} {threads} tag
+        Rscript ./scripts/create_dictionary.R {input.collapsed} whatshap/ {input.classification} {threads} tag
         """
-
 
 rule add_tags_to_bam:
     conda:
