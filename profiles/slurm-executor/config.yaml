@@ -9,3 +9,6 @@ default-resources:
   - slurm_partition=ckpt
   - slurm_account=stergachislab
 use-conda: true
+conda-frontend: "conda"
+rerun-incomplete: true
+keep-going: true
