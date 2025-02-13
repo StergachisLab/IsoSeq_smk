@@ -1,3 +1,4 @@
+conda-frontend: "conda"
 rerun-incomplete: True
 show-failed-logs: True
 rerun-triggers: mtime
