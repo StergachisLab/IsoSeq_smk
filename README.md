@@ -32,8 +32,8 @@ You will need snakemake and the snakemake executor plugin to distribute jobs on 
 # Create the conda environment
 conda create -n snakemake python=3.11
 # Install snakemake, and snakemake-executor-plugin-slurm
-conda install bioconda::snakemake
-conda install bioconda::snakemake-executor-plugin-slurm
+conda install -c bioconda -c conda-forge snakemake
+conda install -c bioconda -c conda-forge snakemake-executor-plugin-slurm
 
 # 2) Activate the conda environment
 conda activate snakemake
