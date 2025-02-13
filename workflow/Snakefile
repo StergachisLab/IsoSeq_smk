@@ -449,7 +449,7 @@ rule create_dictionary:
         "envs/r-base.yml"
     input:
         collapsed = "collapse/collapsed.read_stat.txt",
-        haplotag = get_haplotag_files,  # ✅ Using the function as it was
+        haplotag = get_haplotag_files, 
         classification = "pigeon/pigeon_classification.txt"
     output:
         "tag/dictionary_{individual}.txt"
