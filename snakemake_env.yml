@@ -1,11 +1,10 @@
-name: snakemake-slurm
+name: snakemake_env
 channels:
-  - bioconda
   - conda-forge
   - defaults
 dependencies:
-  - python=3.10
-  - snakemake-minimal=7.32.4
+  - python=3.11
+  - snakemake=8.27.1
   - pip
   - pip:
-      - snakemake-executor-plugin-slurm
+      - snakemake-executor-plugin-slurm==0.15.0
