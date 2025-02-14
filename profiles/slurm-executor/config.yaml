@@ -10,5 +10,6 @@ default-resources:
   - slurm_account=stergachislab
 use-conda: true
 conda-frontend: "conda"
+conda-use-mamba: false
 rerun-incomplete: true
 keep-going: true
