@@ -26,14 +26,8 @@ You will need snakemake and the snakemake executor plugin to distribute jobs on 
 
 ```
 # 1) Create the conda environment by using the provided yml file
+# conda config --set channel_priority strict
 # conda env create --file snakemake_env.yml
-
-#Alternatively (although it might have some dependencies missing):
-# Create the conda environment
-conda create -n snakemake
-# Install snakemake, and snakemake-executor-plugin-slurm
-conda install -c bioconda -c conda-forge snakemake
-conda install -c bioconda -c conda-forge snakemake-executor-plugin-slurm
 
 # 2) Activate the conda environment
 conda activate snakemake
