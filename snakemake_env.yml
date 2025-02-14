@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - python=3.11
+  - conda=24.7.1 
   - snakemake=8.27.1
   - pip
   - pip:
