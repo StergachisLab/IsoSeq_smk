@@ -19,3 +19,7 @@ dependencies:
   - r-tidyverse=2.0.0
   - r-future.apply=1.11.0
   - r-stringi=1.7.12
+  - libtiff=4.4.0
+  - libdeflate=1.17
+  - gfortran_impl_linux-64=12.2.0
+  - gxx_linux-64=12.2.0
