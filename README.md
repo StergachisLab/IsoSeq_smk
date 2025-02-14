@@ -30,7 +30,7 @@ You will need snakemake and the snakemake executor plugin to distribute jobs on 
 # conda env create --file snakemake_env.yml
 
 # 2) Activate the conda environment
-conda activate snakemake
+conda activate snakemake_env
 
 ```
 
