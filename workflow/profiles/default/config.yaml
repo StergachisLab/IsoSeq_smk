@@ -1,4 +1,5 @@
 conda-frontend: "conda"
+conda-use-mamba: false
 rerun-incomplete: True
 show-failed-logs: True
 rerun-triggers: mtime
