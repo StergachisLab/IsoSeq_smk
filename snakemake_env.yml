@@ -1,4 +1,4 @@
-name: snakemake
+name: snakemake-slurm
 channels:
   - bioconda
   - conda-forge
@@ -8,4 +8,4 @@ dependencies:
   - snakemake-minimal=7.32.4
   - pip
   - pip:
-      - git+https://github.com/snakemake/snakemake-executor-plugin-slurm.git@v0.15.0
+      - snakemake-executor-plugin-slurm
