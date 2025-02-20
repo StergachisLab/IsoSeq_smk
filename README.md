@@ -47,6 +47,11 @@ We suggest using the following flags for execution control:
 ```
 ```
 snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k --verbose
+
+Or:
+
+nohup snakemake -s ./workflow/Snakefile --profile ./profiles/slurm-executor/ --configfile .config/config.yaml -p -k --verbose --retries=1 --directory ./results > nohup.capture
+
 ```
 
 
