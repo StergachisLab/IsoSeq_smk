@@ -50,7 +50,7 @@ snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p 
 
 Or:
 
-nohup snakemake -s ./workflow/Snakefile --profile ./profiles/slurm-executor/ --configfile .config/config.yaml -p -k --verbose --retries=1 --directory ./results > nohup.capture
+nohup snakemake -s workflow/Snakefile --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k --verbose --retries=1 --directory results > nohup.capture
 
 ```
 
