@@ -35,7 +35,10 @@ isoform_merge <- left_join(collapsed_data, classification_data)
 isoform_merge <- left_join(isoform_merge, hap, by = join_by("read_id" == "ReadName"))
 
 dictionary <- isoform_merge %>%
-  mutate(sample = str_extract(read_id, "PS\\d+"))
+    mutate(
+    sample = str_extract(read_id, "PS\\d+"),
+    condition = str_extract(read_id, "treated|untreated")
+  )
 
 counts_hap <- dictionary %>%
   group_by(sample, isoform, condition, Haplotype) %>%
