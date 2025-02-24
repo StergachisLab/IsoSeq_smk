@@ -18,7 +18,7 @@ def process_bam(bam_file, output_file):
             # Extract read length
             read_length = len(read.query_sequence)
             # Extract haplotype tag if it exists, else 'NA'
-            hp = read.get_tag('HP') if read.has_tag('HP') else 'NA'
+            hp = read.get_tag('HP') if read.has_tag('HP') else '0'
             out.write(f"{read.query_name}\t{rq}\t{read_length}\t{hp}\n")
     
     bam.close()
