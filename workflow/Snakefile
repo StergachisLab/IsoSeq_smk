@@ -275,7 +275,7 @@ rule whatshap_haplotag:
         else
             echo "No variants found or condition failed. Running add_hp0.sh."
             ./scripts/add_hp0.sh {input.bam} {output.haplotagged_bam}
-            touch {output.list_txt}
+            echo -e "#readname\thaplotype\tphaseset\tchromosome" > {output.list_txt}
         fi
         """
 
@@ -292,7 +292,7 @@ rule extract_read_info:
         runtime = 480
     shell:
         """
-        python ./scripts/extract_read_info.py {input.bam} {output.txt}
+        python ../scripts/extract_read_info.py {input.bam} {output.txt}
         """
 
 
@@ -461,7 +461,7 @@ rule create_dictionary:
         slurm_partition = "cpu-g2"
     shell:
         """
-        Rscript ./scripts/create_dictionary.R {input.collapsed} whatshap/ {input.classification} {threads} tag
+        Rscript ../scripts/create_dictionary.R {input.collapsed} whatshap/ {input.classification} {threads} tag
         """
 
 rule add_tags_to_bam:
@@ -480,5 +480,5 @@ rule add_tags_to_bam:
         mem_mb = 80000
     shell:
         """
-        ./scripts/add_tags_to_bam.sh {input.bam} {input.dictionary} {output.bam}
+        ../scripts/add_tags_to_bam.sh {input.bam} {input.dictionary} {output.bam}
         """
