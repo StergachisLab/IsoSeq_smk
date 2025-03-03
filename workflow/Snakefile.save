@@ -251,7 +251,6 @@ rule modify_vcf:
         fi
         """
 
-script_add_hp0 = os.path.join(workflow.basedir, "scripts/add_hp0.sh")
 
 rule whatshap_haplotag:
     conda:
@@ -266,8 +265,10 @@ rule whatshap_haplotag:
     output:
         haplotagged_bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam",
         list_txt = "whatshap/{individual}_{condition}_{label}.list.txt"
-    shell:
-        """
+        # Get the absolute path to the script
+        script_path = workflow.source("scripts/add_hp0.sh")
+
+        shell(f"""
         if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then
             echo "Variants found. Running whatshap haplotag."
             whatshap haplotag {input.phased_vcf_gz} {input.bam} \
@@ -275,12 +276,11 @@ rule whatshap_haplotag:
                 --output-haplotag-list {output.list_txt}
         else
             echo "No variants found or condition failed. Running add_hp0.sh."
-            sh {script_add_hp0} {input.bam} {output.haplotagged_bam}
+            sh {script_path} {input.bam} {output.haplotagged_bam}
             echo -e "#readname\thaplotype\tphaseset\tchromosome" > {output.list_txt}
         fi
-        """
+        """)
 
-script_extract = os.path.join(workflow.basedir, "scripts/extract_read_info.py")
 
 rule extract_read_info:
     conda:
@@ -294,7 +294,7 @@ rule extract_read_info:
         runtime = 480
     shell:
         """
-        python {script_extract} {input.bam} {output.txt}
+        python scripts/extract_read_info.py {input.bam} {output.txt}
         """
 
 
@@ -325,7 +325,7 @@ rule cluster:
         bai = "merged/{individual}_all_conditions_merged.bam.bai"
     output:
         clustered = "clustered/{individual}_clustered.bam"
-    threads: 20
+    threads: config.get("threads", 4)
     resources:
         runtime = 1800,
         mem_mb = 550000,
@@ -446,8 +446,6 @@ rule pigeon_process:
         """
 
 
-script_dict = os.path.join(workflow.basedir, "scripts/create_dictionary.R")
-
 rule create_dictionary:
     conda:
         "envs/r-base.yml"
@@ -465,10 +463,8 @@ rule create_dictionary:
         slurm_partition = "cpu-g2"
     shell:
         """
-        Rscript [script_dict} {input.collapsed} whatshap/ {input.classification} {threads} tag
+        Rscript ../scripts/create_dictionary.R {input.collapsed} whatshap/ {input.classification} {threads} tag
         """
-
-script_tag = os.path.join(workflow.basedir, "scripts/add_tags_to_bam.sh")
 
 rule add_tags_to_bam:
     conda:
@@ -486,5 +482,5 @@ rule add_tags_to_bam:
         mem_mb = 80000
     shell:
         """
-        sh {script_tag} {input.bam} {input.dictionary} {output.bam}
+        sh scripts/add_tags_to_bam.sh {input.bam} {input.dictionary} {output.bam}
         """
