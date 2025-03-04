@@ -81,5 +81,4 @@ write_gzipped_tsv <- function(df, filename) {
   return(gz_filename)
 }
 
-# Example usage
 write_gzipped_tsv(out, "dictionary.tsv")
