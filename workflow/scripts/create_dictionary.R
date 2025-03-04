@@ -3,7 +3,7 @@
 suppressPackageStartupMessages({
   library(data.table)
   library(stringr)
-  library(parallel)
+  library(feather)
   library(dplyr)
   library(purrr)
   library(tidyr)
@@ -70,27 +70,8 @@ dictionary <- left_join(dictionary, counts_hap) %>%
          subcategory = paste0("sb:Z:", subcategory)) %>%
   distinct()
 
-#out <- dictionary %>%
-# select(-ReadQuality, -ReadLength, -Haplotype, -Filename, -sample, -condition)
+out <- dictionary %>%
+ select(-ReadQuality, -ReadLength, -Haplotype, -Filename, -sample, -condition)
+write_feather(out, "dictionary.feather")
 #write.table(out, paste0(output_dir, "/dictionary_all.txt"), quote = F, col.names = T, row.names = F, sep = "\t")
 
-samples_list <- unique(dictionary$sample)
-
-# Function to process each sample
-write_sample_file <- function(sample_id) {
-  # Filter dictionary for the sample
-  sample_data <- dictionary %>% filter(sample == sample_id)
-  
-  # Extract the filename format
-  output_filename <- str_extract(sample_data$Filename[1], "(?<=whatshap//).*\\.haplotagged\\.txt") %>%
-    str_replace("\\.haplotagged\\.txt$", ".dictionary.txt")
-  
-  # Define full path
-  output_path <- file.path(output_dir, output_filename)
-  
-  # Write file
-  write.table(sample_data, file = output_path, sep = "\t", quote = FALSE, row.names = FALSE)
-}
-
-# Run sequentially
-lapply(samples_list, write_sample_file)
