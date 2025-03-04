@@ -70,6 +70,10 @@ dictionary <- left_join(dictionary, counts_hap) %>%
          subcategory = paste0("sb:Z:", subcategory)) %>%
   distinct()
 
+#out <- dictionary %>%
+# select(-ReadQuality, -ReadLength, -Haplotype, -Filename, -sample, -condition)
+#write.table(out, paste0(output_dir, "/dictionary_all.txt"), quote = F, col.names = T, row.names = F, sep = "\t")
+
 samples_list <- unique(dictionary$sample)
 
 mclapply(samples_list, function(sample_id) {
