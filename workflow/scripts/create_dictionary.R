@@ -76,16 +76,6 @@ dictionary <- left_join(dictionary, counts_hap) %>%
 
 samples_list <- unique(dictionary$sample)
 
-library(dplyr)
-library(stringr)
-
-# Define output directory
-output_dir <- "output_files"
-dir.create(output_dir, showWarnings = FALSE)
-
-# Extract unique samples
-samples_list <- unique(dictionary$sample)
-
 # Function to process each sample
 write_sample_file <- function(sample_id) {
   # Filter dictionary for the sample
