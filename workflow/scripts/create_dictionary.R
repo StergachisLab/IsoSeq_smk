@@ -72,6 +72,14 @@ dictionary <- left_join(dictionary, counts_hap) %>%
 
 out <- dictionary %>%
  select(-ReadQuality, -ReadLength, -Haplotype, -Filename, -sample, -condition)
-write_feather(out, "dictionary.feather")
-#write.table(out, paste0(output_dir, "/dictionary_all.txt"), quote = F, col.names = T, row.names = F, sep = "\t")
 
+write_gzipped_tsv <- function(df, filename) {
+  gz_filename <- paste0(filename, ".gz")
+  con <- gzfile(gz_filename, "wt")  # Open gzipped file for writing
+  write.table(df, con, sep = "\t", quote = FALSE, row.names = FALSE)
+  close(con)
+  return(gz_filename)
+}
+
+# Example usage
+write_gzipped_tsv(out, "dictionary.tsv")
