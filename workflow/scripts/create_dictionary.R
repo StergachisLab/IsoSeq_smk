@@ -76,11 +76,31 @@ dictionary <- left_join(dictionary, counts_hap) %>%
 
 samples_list <- unique(dictionary$sample)
 
-mclapply(samples_list, function(sample_id) {
-  dictionary_out <- dictionary %>%
-    filter(sample == sample_id) %>%
-    select(-ReadQuality, -ReadLength, -Haplotype, -Filename, -condition, -id)
+library(dplyr)
+library(stringr)
+
+# Define output directory
+output_dir <- "output_files"
+dir.create(output_dir, showWarnings = FALSE)
+
+# Extract unique samples
+samples_list <- unique(dictionary$sample)
+
+# Function to process each sample
+write_sample_file <- function(sample_id) {
+  # Filter dictionary for the sample
+  sample_data <- dictionary %>% filter(sample == sample_id)
   
-  output_file <- file.path(output_dir, paste0("dictionary_", sample_id, ".txt"))
-  write.table(dictionary_out, output_file, quote = FALSE, col.names = TRUE, row.names = FALSE, sep = "\t")
-}, mc.cores = n_threads)
+  # Extract the filename format
+  output_filename <- str_extract(sample_data$Filename[1], "(?<=whatshap//).*\\.haplotagged\\.txt") %>%
+    str_replace("\\.haplotagged\\.txt$", ".dictionary.txt")
+  
+  # Define full path
+  output_path <- file.path(output_dir, output_filename)
+  
+  # Write file
+  write.table(sample_data, file = output_path, sep = "\t", quote = FALSE, row.names = FALSE)
+}
+
+# Run sequentially
+lapply(samples_list, write_sample_file)
