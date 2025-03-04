@@ -47,7 +47,7 @@ counts_hap <- dictionary %>%
   pivot_wider(id_cols = c(sample, isoform, Haplotype), names_from = c(condition), values_from = n_hap_cond) %>%
   mutate(iso_hap_noncyclo_counts = paste0("hn:i:", untreated),
          iso_hap_cyclo_counts = paste0("hc:i:", treated)) %>%
-  select(-cyclo, -`non-cyclo`)
+  select(-treated, -untreated)
 
 counts <- dictionary %>%
   group_by(sample, isoform, condition) %>%
@@ -56,7 +56,7 @@ counts <- dictionary %>%
   pivot_wider(c(sample, isoform), names_from = condition, values_from = n_cond) %>%
   mutate(iso_noncyclo_counts = paste0("sn:i:", untreated),
          iso_cyclo_counts = paste0("sc:i:", treated)) %>%
-  select(-cyclo, -`non-cyclo`)
+  select(-treated, -untreated)
 
 dictionary <- left_join(dictionary, counts_hap) %>%
   left_join(counts) %>%
