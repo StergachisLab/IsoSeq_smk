@@ -1,10 +1,10 @@
 #!/bin/bash
 # Adriana Sedeno
-# Append tags to a bam file
+# Append tags to a BAM file using a gzipped TSV dictionary
 
 # Check for the correct number of arguments
 if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <input.bam> <dictionary.tsv> <output.bam>"
+    echo "Usage: $0 <input.bam> <dictionary.tsv.gz> <output.bam>"
     exit 1
 fi
 
@@ -15,7 +15,7 @@ tmp_prefix="./temp_$$"
 
 # Ensure samtools is installed
 if ! command -v samtools &> /dev/null; then
-    echo "samtools could not be found, please install samtools."
+    echo "Error: samtools could not be found, please install samtools."
     exit 1
 fi
 
@@ -26,12 +26,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Prepare the dictionary for use in awk
-awk 'BEGIN { FS=OFS="\t" }
+# Prepare the dictionary for use in awk (decompress on the fly)
+gzip -dc "$dict_file" | awk 'BEGIN { FS=OFS="\t" }
      { tag = "";
        for (i = 2; i <= NF; i++) tag = tag OFS $i;
        tags[$1] = tag }
-     END { for (key in tags) print key, tags[key] }' "$dict_file" > "${tmp_prefix}_tags.tmp"
+     END { for (key in tags) print key, tags[key] }' > "${tmp_prefix}_tags.tmp"
 if [ $? -ne 0 ]; then
     echo "Error: preparing dictionary for awk failed."
     exit 1
