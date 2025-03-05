@@ -102,7 +102,7 @@ def whatshap_outs(wc):
 rule all:
     input:
         expand(
-            "whatshap/{individual}_{condition}_{label}.tagged.bam",
+            "tag/{individual}_{condition}_{label}.tagged.bam",
             zip,
             individual=[comb["individual"] for comb in combinations],
             condition=[comb["condition"] for comb in combinations],
@@ -474,14 +474,15 @@ rule add_tags_to_bam:
         bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam",
         dictionary = "tag/dictionary.tsv.gz"
     output:
-        bam = "whatshap/{individual}_{condition}_{label}.tagged.bam",
-        bai = "whatshap/{individual}_{condition}_{label}.tagged.bam.bai"
+        bam = "tag/{individual}_{condition}_{label}.tagged.bam",
+        bai = "tag/{individual}_{condition}_{label}.tagged.bam.bai"
     benchmark: "benchmark/add_tags_to_bam/{individual}_{condition}_{label}_tagged.txt"
-    threads: config.get("threads", 4)
+    threads: config.get("threads", 8)
     resources:
         runtime = 480,
-        mem_mb = 80000
+        mem_mb = 160000,
+        slurm_partition = "cpu-g2"
     shell:
         """
-        sh {script_tag} {input.bam} {input.dictionary} {output.bam}
+        sh {script_tag} {input.bam} {input.dictionary} {output.bam} {threads}
         """
