@@ -108,10 +108,7 @@ rule all:
             condition=[comb["condition"] for comb in combinations],
             label=[comb["label"] for comb in combinations]
         ),
-        expand(
-            "tag/dictionary_{individual}.txt",
-            individual=[comb["individual"] for comb in combinations]
-        ),
+        "tag/dictionary.tsv.gz",
         "collapse/collapsed.gff",
         "pigeon/sorted.gff",
         "pigeon/pigeon_classification.txt"
@@ -453,11 +450,11 @@ rule create_dictionary:
         "envs/r-base.yml"
     input:
         collapsed = "collapse/collapsed.read_stat.txt",
-        haplotag = get_haplotag_files, 
+        haplotag = get_haplotag_files,
         classification = "pigeon/pigeon_classification.txt"
     output:
-        "tag/dictionary_{individual}.txt"
-    benchmark: "benchmark/create_dictionary/dictionary_{individual}.txt"
+        "tag/dictionary.tsv.gz"
+    benchmark: "benchmark/create_dictionary/dictionary.txt"
     threads: config.get("threads", 4)
     resources:
         runtime = 980,
@@ -465,7 +462,7 @@ rule create_dictionary:
         slurm_partition = "cpu-g2"
     shell:
         """
-        Rscript [script_dict} {input.collapsed} whatshap/ {input.classification} {threads} tag
+        Rscript {script_dict} {input.collapsed} whatshap/ {input.classification} {threads} tag
         """
 
 script_tag = os.path.join(workflow.basedir, "scripts/add_tags_to_bam.sh")
@@ -475,7 +472,7 @@ rule add_tags_to_bam:
         "envs/env.yml"
     input:
         bam = "whatshap/{individual}_{condition}_{label}.haplotagged.bam",
-        dictionary = "tag/dictionary_{individual}.txt"
+        dictionary = "tag/dictionary.tsv.gz"
     output:
         bam = "whatshap/{individual}_{condition}_{label}.tagged.bam",
         bai = "whatshap/{individual}_{condition}_{label}.tagged.bam.bai"
