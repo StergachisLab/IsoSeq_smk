@@ -16,8 +16,8 @@ associated_transcript (tn:Z:)
 subcategory (sb:Z:)
 isoform_haplotype_noncyclo_counts (hn:i:)
 isoform_haplotype_cyclo_counts (hc:i:)
-isoform_noncyclo_counts (nc:i:)
-isoform_cyclo_counts (cc:i:)
+isoform_noncyclo_counts (sn:i:)
+isoform_cyclo_counts (sc:i:)
 ```
 
 ## Installation
