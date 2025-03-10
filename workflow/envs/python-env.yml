@@ -7,3 +7,6 @@ dependencies:
   - dask
   - numpy
   - pyarrow
+  - pysam
+  - matplotlib
+  - seaborn

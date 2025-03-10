@@ -1,6 +1,6 @@
 #!/bin/bash
 # Adriana Sedeno
-# Optimized script to append tags to BAM file while preserving integrity
+# Optimized script to append tags to BAM file with minimal disk usage and memory overhead
 
 # Check for the correct number of arguments
 if [ "$#" -ne 4 ]; then
@@ -12,7 +12,6 @@ input_bam=$1
 dict_file=$2
 output_bam=$3
 threads=$4
-tmp_prefix="./temp_$$"
 
 # Ensure samtools is installed
 if ! command -v samtools &> /dev/null; then
@@ -20,39 +19,33 @@ if ! command -v samtools &> /dev/null; then
     exit 1
 fi
 
-echo "Extracting BAM headers..."
-samtools view -@ "$threads" -H "$input_bam" > "${tmp_prefix}_header.sam"
+echo "Processing BAM file: $input_bam"
 
-echo "Extracting read IDs from BAM..."
-samtools view -@ "$threads" "$input_bam" | cut -f1 | sort -u > "${tmp_prefix}_bam_reads.list"
+# Step 1: Extract headers from BAM (streaming output to stdout)
+samtools view -@ "$threads" -H "$input_bam" > "${output_bam}.header.sam"
 
-echo "Filtering dictionary for this BAM file..."
-gzip -dc "$dict_file" | grep -F -f "${tmp_prefix}_bam_reads.list" | sort --parallel="$threads" -k1,1 > "${tmp_prefix}_filtered_dict.tsv"
+# Step 2: Extract read IDs from BAM and filter dictionary dynamically
+echo "Extracting read IDs from BAM and filtering dictionary..."
+samtools view -@ "$threads" "$input_bam" | cut -f1 | sort -u | \
+    awk 'NR==FNR { read_ids[$1]=1; next } ($1 in read_ids)' - <(gzip -dc "$dict_file") | \
+    sort -k1,1 > "${output_bam}.filtered_dict.tsv"
 
-echo "Sorting BAM reads..."
-samtools view -@ "$threads" "$input_bam" | sort --parallel="$threads" -k1,1 > "${tmp_prefix}_sorted_reads.tsv"
+# Step 3: Stream BAM reads and merge with dictionary dynamically
+echo "Processing BAM reads and appending tags..."
+samtools view -@ "$threads" "$input_bam" | sort -k1,1 | \
+    join -t $'\t' -1 1 -2 1 - "${output_bam}.filtered_dict.tsv" | \
+    cat "${output_bam}.header.sam" - | samtools view -@ "$threads" -b -o "${output_bam}.unsorted.bam"
 
-echo "Merging dictionary tags with BAM reads..."
-join -t $'\t' -1 1 -2 1 "${tmp_prefix}_sorted_reads.tsv" "${tmp_prefix}_filtered_dict.tsv" > "${tmp_prefix}_tagged_reads.tsv"
+# Step 4: Sort BAM before indexing
+echo "Sorting BAM..."
+samtools sort -@ "$threads" -o "$output_bam" "${output_bam}.unsorted.bam"
 
-echo "Reassembling BAM..."
-cat "${tmp_prefix}_header.sam" "${tmp_prefix}_tagged_reads.tsv" > "${tmp_prefix}_final.sam"
-
-# Step 7: Convert back to BAM
-echo "Converting to BAM..."
-samtools view -@ "$threads" -b -o "${tmp_prefix}_unsorted.bam" "${tmp_prefix}_final.sam"
-
-# Step 8: Sort BAM by coordinate order before indexing
-echo "Sorting BAM by coordinate order..."
-samtools sort -@ "$threads" -o "$output_bam" "${tmp_prefix}_unsorted.bam"
-
-# Step 9: Index BAM file
+# Step 5: Index BAM
 echo "Indexing BAM..."
 samtools index -@ "$threads" "$output_bam"
 
-# Cleanup temporary files
-rm "${tmp_prefix}_header.sam" "${tmp_prefix}_bam_reads.list" "${tmp_prefix}_filtered_dict.tsv" \
-   "${tmp_prefix}_sorted_reads.tsv" "${tmp_prefix}_tagged_reads.tsv" "${tmp_prefix}_final.sam" "${tmp_prefix}_unsorted.bam"
+# Cleanup temporary header file and filtered dictionary
+rm "${output_bam}.header.sam" "${output_bam}.filtered_dict.tsv" "${output_bam}.unsorted.bam"
 
 # Confirm completion
 if [ $? -eq 0 ]; then
