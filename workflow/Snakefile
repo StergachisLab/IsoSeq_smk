@@ -111,8 +111,21 @@ rule all:
         "tag/dictionary.tsv.gz",
         "collapse/collapsed.gff",
         "pigeon/sorted.gff",
-        "pigeon/pigeon_classification.txt"
-
+        "pigeon/pigeon_classification.txt",
+        expand(
+            "qc/{individual}_{condition}_{label}_qc_summary.tsv",
+            zip,
+            individual=[comb["individual"] for comb in combinations],
+            condition=[comb["condition"] for comb in combinations],
+            label=[comb["label"] for comb in combinations]
+        ),
+        expand(
+            "qc/{individual}_{condition}_{label}_plots",
+            zip,
+            individual=[comb["individual"] for comb in combinations],
+            condition=[comb["condition"] for comb in combinations],
+            label=[comb["label"] for comb in combinations]
+        )
 
 rule merge_individual_condition:
     conda:
@@ -480,9 +493,27 @@ rule add_tags_to_bam:
     threads: config.get("threads", 8)
     resources:
         runtime = 480,
-        mem_mb = 160000,
+        mem_mb = 15000,
         slurm_partition = "cpu-g2"
     shell:
         """
-        sh {script_tag} {input.bam} {input.dictionary} {output.bam} {threads}
+        bash {script_tag} {input.bam} {input.dictionary} {output.bam} {threads}
         """
+
+script_qc = os.path.join(workflow.basedir, "scripts/qc_metrics.py")
+
+rule qc_flnc:
+    conda:
+        "envs/python-env.yml"
+    input:
+        bam="tag/{individual}_{condition}_{label}.tagged.bam"
+    output:
+        tsv="qc/{individual}_{condition}_{label}_qc_summary.tsv",
+        plots_dir=directory("qc/{individual}_{condition}_{label}_plots")
+    params:
+        output_dir="qc/{individual}_{condition}_{label}_plots"
+    shell:
+        """
+        python {script_qc} {input.bam} {output.tsv} {params.output_dir}
+        """
+
