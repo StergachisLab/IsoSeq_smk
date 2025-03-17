@@ -126,7 +126,16 @@ rule all:
             condition=[comb["condition"] for comb in combinations],
             label=[comb["label"] for comb in combinations]
         ),
-	directory("Output/")
+        "Output/browser/combined_results/merged_ranked_gene_with_phenotype.csv.gz",
+        "Output/browser/combined_results/merged_ranked_isoform_with_phenotype.csv.gz",
+        "Output/browser/lookup_tables/gene_coverage_lookup_table.csv.gz",
+        "Output/browser/lookup_tables/sample_gene_rankings_lookup_table.csv.gz",
+        "Output/intermediate/merged_ranked_gene.csv.gz",
+        "Output/intermediate/merged_ranked_isoform.csv.gz",
+        "Output/qc/gene_diversity.csv.gz",
+        "Output/qc/isoform_diversity.csv.gz",
+        "Output/qc/pca_plot.pdf"
+
 
 rule merge_individual_condition:
     conda:
@@ -523,21 +532,34 @@ rule isoranker_analysis:
         hpo_file="../docs/phenotype.hpoa",
         probands_file="../docs/Multiome_samples_clinical_findings_2.11.25.csv"
     output:
-        browser_dir=directory("Output/browser/"),
-	qc_dir=directory("Output/qc/")
-   params:
-	output_dir="Output/"
+        "Output/browser/combined_results/merged_ranked_gene_with_phenotype.csv.gz",
+        "Output/browser/combined_results/merged_ranked_isoform_with_phenotype.csv.gz",
+        "Output/browser/lookup_tables/gene_coverage_lookup_table.csv.gz",
+        "Output/browser/lookup_tables/sample_gene_rankings_lookup_table.csv.gz",
+        "Output/intermediate/merged_ranked_gene.csv.gz",
+        "Output/intermediate/merged_ranked_isoform.csv.gz",
+        "Output/qc/gene_diversity.csv.gz",
+        "Output/qc/isoform_diversity.csv.gz",
+        "Output/qc/pca_plot.pdf"
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+        mem_mb=200000,
+        slurm_partition="cpu-g2"
+    benchmark: "benchmark/isoranker.txt"
+    params:
+        output_dir="Output/"
     conda:
-        "envs/python-env.yml"
+        "envs/isoranker.yml"
     shell:
         """
         isoranker_pb_run_analysis \
           --read_stat_path {input.read_stat} \
+          --reference_fasta_path {config[reference_genome]} \
           --sample_info_path {input.sample_info} \
           --classification_path {input.classification} \
           --genemap_path {input.genemap} \
           --hpo_file_path {input.hpo_file} \
-          --probands_file_path {input.probands_file} \
-          --output_dir {params.output_dir}
+          --probands_file_path {input.probands_file}
         """
 
