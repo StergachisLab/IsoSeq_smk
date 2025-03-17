@@ -100,7 +100,8 @@ def whatshap_outs(wc):
     template_f_path = "whatshap/{individual}_{condition}_{label}.tagged.bam"
     rtn = []
     for individual in config['individuals']:
-        for condition in ["treated", "untreated"]:
+        for condition in config["individuals"][individual]:
+        #for condition in ["treated", "untreated"]:
             for label in config['individuals'][individual][condition]:
                 rtn.append(
                     template_f_path.format(
