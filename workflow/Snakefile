@@ -8,14 +8,23 @@ configfile: 'config/config.yaml'
 individuals = config["individuals"].keys()
 
 # list of conditions for each individual
-conditions = ["treated", "untreated"]
+#conditions = ["treated", "untreated"]
+
+# Extract all unique conditions dynamically
+conditions = set()
+for individual in individuals:
+    conditions.update(config["individuals"][individual].keys())
+
+# Convert to sorted list (optional for consistency)
+conditions = sorted(conditions)
 
 # dictionary containing labels for each combination of individual and condition
 # based on the configuration file
 labels = {
     individual: {
         condition: list(config["individuals"][individual][condition].keys())
-        for condition in ["treated", "untreated"]
+        # for condition in ["treated", "untreated"]
+        for condition in config["individuals"][individual]
     }
     for individual in individuals
 }
@@ -24,14 +33,16 @@ labels = {
 combinations = [
     {"individual": ind, "condition": cond, "label": lbl}
     for ind in individuals
-    for cond in ["treated", "untreated"]
+    #for cond in ["treated", "untreated"]
+    for cond in config["individuals"][ind].keys()
     for lbl in labels[ind][cond]
 ]
 
 # Restrict the values that wildcards can take from the config file
 wildcard_constraints:
     individual = "|".join(individuals),
-    condition = "treated|untreated",
+    # condition = "treated|untreated",
+    condition = "|".join(conditions),
     label = "|".join(set(label for ind in individuals for cond in conditions for label in labels[ind][cond]))
 
 # check if "deepvariant_vcf" exists for an individual
@@ -67,7 +78,8 @@ def get_merge_input(wc):
 def combine_labels(wildcards):
     individual = wildcards.individual
     rtn = []
-    for condition in ["treated", "untreated"]:
+    # for condition in ["treated", "untreated"]:
+    for condition in config["individuals"][individual]:
         for label in config["individuals"][individual][condition]:
             file = f"merged/{individual}_{condition}_{label}_labeled.bam"
             rtn.append(file)
@@ -77,7 +89,8 @@ def combine_labels(wildcards):
 def get_haplotag_files(wildcards):
     files = []
     for individual in config['individuals']:
-        for condition in ["treated", "untreated"]:
+        # for condition in ["treated", "untreated"]:
+        for condition in config["individuals"][individual]:
             for label in config['individuals'][individual][condition]:
                 files.append(f"whatshap/{individual}_{condition}_{label}.haplotagged.txt")
     return files
