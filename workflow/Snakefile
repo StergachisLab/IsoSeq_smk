@@ -125,7 +125,8 @@ rule all:
             individual=[comb["individual"] for comb in combinations],
             condition=[comb["condition"] for comb in combinations],
             label=[comb["label"] for comb in combinations]
-        )
+        ),
+	directory("Output/")
 
 rule merge_individual_condition:
     conda:
@@ -174,7 +175,6 @@ rule merge_individual_condition:
         fi
         """
 
-
 rule label_reads_with_condition:
     conda:
         "envs/env.yml"
@@ -192,7 +192,6 @@ rule label_reads_with_condition:
         awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}' | \
         samtools view -bS - > {output.bam}
         """
-
 
 rule align_sample:
     conda:
@@ -212,7 +211,6 @@ rule align_sample:
             --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
         """
 
-
 rule modify_rg:
     conda:
         "envs/env.yml"
@@ -230,7 +228,6 @@ rule modify_rg:
             -o {output.bam} {input.bam}
         samtools index {output.bam}
         """
-
 
 rule modify_vcf:
     conda:
@@ -515,5 +512,32 @@ rule qc_flnc:
     shell:
         """
         python {script_qc} {input.bam} {output.tsv} {params.output_dir}
+        """
+
+rule isoranker_analysis:
+    input:
+        read_stat="collapse/collapsed.read_stat.txt",
+        sample_info="../docs/Sample_info.csv",
+        classification="pigeon/pigeon_classification.txt",
+        genemap="../docs/genemap2.txt",
+        hpo_file="../docs/phenotype.hpoa",
+        probands_file="../docs/Multiome_samples_clinical_findings_2.11.25.csv"
+    output:
+        browser_dir=directory("Output/browser/"),
+	qc_dir=directory("Output/qc/")
+   params:
+	output_dir="Output/"
+    conda:
+        "envs/python-env.yml"
+    shell:
+        """
+        isoranker_pb_run_analysis \
+          --read_stat_path {input.read_stat} \
+          --sample_info_path {input.sample_info} \
+          --classification_path {input.classification} \
+          --genemap_path {input.genemap} \
+          --hpo_file_path {input.hpo_file} \
+          --probands_file_path {input.probands_file} \
+          --output_dir {params.output_dir}
         """
 

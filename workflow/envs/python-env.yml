@@ -10,3 +10,6 @@ dependencies:
   - pysam
   - matplotlib
   - seaborn
+  - pip
+  - pip:
+      - git+https://github.com/yhhc2/IsoRanker.git
