@@ -56,7 +56,7 @@ individuals:
         - /path/to/flnc/ind_2/condition1/IsoSeqX.flnc3.bam
     condition2:
       label_B:
-        - /path/to/flnc/ind_1/condition2/IsoSeqX.flnc.bam
+        - /path/to/flnc/ind_2/condition2/IsoSeqX.flnc.bam
 reference_genome: /path/to/fasta/genome/hg38.fa
 pigeon_annot: /path/to/reference_annotfile/gencode.v46.annotation.gtf
 threads: 8
