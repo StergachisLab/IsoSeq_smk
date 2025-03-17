@@ -1,11 +1,63 @@
-# Configuration options
+# `config.yaml` Documentation  
 
-A description of every valid option in `config.yaml`.
+This file configures input files, sample metadata, and reference genome paths.
 
-e.g.
+## Configuration Options  
 
-A prefix for outputs.
+### 1. `individuals`  
 
+Defines sample information, including phased VCF files and long-read sequencing data.
+
+#### Structure:  
+```yaml
+individuals:
+  <individual_id>:
+    deepvariant_vcf: <path_to_vcf_file>
+    <condition_name>:
+      <label_id>:
+        - <path_to_flnc_bam_file>
 ```
-sample: a
+
+### 2. `reference_genome`
+Path to the reference genome FASTA file.
+```yaml
+reference_genome: <path_to_fasta_file>
+```
+
+### 3. `pigeon_annot`
+Path to the GTF annotation file used for transcript annotation.
+```yaml
+pigeon_annot: <path_to_gencode_gtf_file>
+```
+
+### 4. `threads`
+Number of CPU threads to use for processing.
+```yaml
+threads: <num_threads>
+```
+Example: 
+
+```yaml
+individuals:
+  ind_1:
+    deepvariant_vcf: /path/to/vcf/deepvariant_phased_ind_1.vcf.gz
+    condition1:
+      label_A:
+        - /path/to/flnc/ind_1/condition1/IsoSeqX.flnc.bam
+    condition2:
+      label_B:
+        - /path/to/flnc/ind_1/condition2/IsoSeqX.flnc.bam
+  ind_2:
+    deepvariant_vcf: /path/to/vcf/indiv_2.haplotagged.vcf.gz
+    condition1:
+      label_A:
+        - /path/to/flnc/ind_2/condition1/IsoSeqX.flnc1.bam
+        - /path/to/flnc/ind_2/condition1/IsoSeqX.flnc2.bam
+        - /path/to/flnc/ind_2/condition1/IsoSeqX.flnc3.bam
+    condition2:
+      label_B:
+        - /path/to/flnc/ind_2/condition2/IsoSeqX.flnc.bam
+reference_genome: /path/to/fasta/genome/hg38.fa
+pigeon_annot: /path/to/reference_annotfile/gencode.v46.annotation.gtf
+threads: 8
 ```
