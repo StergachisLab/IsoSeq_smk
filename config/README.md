@@ -18,19 +18,19 @@ individuals:
         - <path_to_flnc_bam_file>
 ```
 
-2. reference_genome
+### 2. `reference_genome`
 Path to the reference genome FASTA file.
 ```yaml
 reference_genome: <path_to_fasta_file>
 ```
 
-4. pigeon_annot
+### 3. `pigeon_annot`
 Path to the GTF annotation file used for transcript annotation.
 ```yaml
 pigeon_annot: <path_to_gencode_gtf_file>
 ```
 
-5. threads
+### 4. `threads`
 Number of CPU threads to use for processing.
 ```yaml
 threads: <num_threads>
