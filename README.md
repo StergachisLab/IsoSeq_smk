@@ -60,12 +60,11 @@ We suggest using the following flags for execution control:
 --rerun-incomplete: Enables Snakemake to re-execute any previously incomplete rules. 
 ```
 ```
-snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k --verbose
-
-Or:
-
-nohup snakemake -s workflow/Snakefile --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k --verbose --retries=1 --directory results > nohup.capture
-
+nohup snakemake -s workflow/Snakefile \
+--profile profiles/slurm-executor/ \
+--configfile config/config.yaml \
+-p -k --verbose --retries=1 \
+--directory results > nohup.capture
 ```
 
 
