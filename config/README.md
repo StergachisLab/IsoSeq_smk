@@ -1,6 +1,6 @@
 # `config.yaml` Documentation  
 
-This file configures input files, sample metadata, and reference genome paths.
+This file configures input files, sample metadata, and reference genome paths. Please use absolute paths in this file. 
 
 ## Configuration Options  
 
