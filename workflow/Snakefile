@@ -9,21 +9,19 @@ individuals = config["individuals"].keys()
 
 # list of conditions for each individual
 #conditions = ["treated", "untreated"]
-
-# Extract all unique conditions dynamically
 conditions = set()
 for individual in individuals:
-    conditions.update(config["individuals"][individual].keys())
-
-# Convert to sorted list (optional for consistency)
-conditions = sorted(conditions)
+    conditions.update(
+        key for key in config["individuals"][individual]
+        if isinstance(config["individuals"][individual][key], dict)
+    )
 
 # dictionary containing labels for each combination of individual and condition
 # based on the configuration file
 labels = {
     individual: {
         condition: list(config["individuals"][individual][condition].keys())
-        # for condition in ["treated", "untreated"]
+        #for condition in ["treated", "untreated"]
         for condition in config["individuals"][individual]
     }
     for individual in individuals
@@ -33,7 +31,7 @@ labels = {
 combinations = [
     {"individual": ind, "condition": cond, "label": lbl}
     for ind in individuals
-    #for cond in ["treated", "untreated"]
+    # for cond in ["treated", "untreated"]
     for cond in config["individuals"][ind].keys()
     for lbl in labels[ind][cond]
 ]
@@ -101,7 +99,7 @@ def whatshap_outs(wc):
     rtn = []
     for individual in config['individuals']:
         for condition in config["individuals"][individual]:
-        #for condition in ["treated", "untreated"]:
+        # for condition in ["treated", "untreated"]:
             for label in config['individuals'][individual][condition]:
                 rtn.append(
                     template_f_path.format(
@@ -558,7 +556,7 @@ rule isoranker_analysis:
     threads: config.get("threads", 4)
     resources:
         runtime=480,
-        mem_mb=200000,
+        mem_mb=500000,
         slurm_partition="cpu-g2"
     benchmark: "benchmark/isoranker.txt"
     params:
