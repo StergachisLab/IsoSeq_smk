@@ -3,12 +3,12 @@ individuals:
     deepvariant_vcf: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/vcf/deepvariant_test.vcf.gz
     untreated:
       noncyclo_s344:
-      - /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/bam/test_subset_untreated.bam
+      - /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/bam/test_untreated.bam
     treated:
       cyclo_s345:
-        - /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/bam/test_subset_treated.bam
-reference_genome: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/reference/hg38.fa
-pigeon_annot: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/gtf/gencode.v46.annotation.gtf
+        - /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/bam/test_treated.bam
+reference_genome: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/reference/hg38_chr20.fa
+pigeon_annot: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/gtf/gencode.v46.test.annot.gtf
 threads: 4
 max_reads: 7000000
 downsample_reads: 100000
