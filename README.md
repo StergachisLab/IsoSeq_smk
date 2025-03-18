@@ -39,6 +39,20 @@ conda activate snakemake_env
 First set up a configuration file. See `config/config.yaml` for a commented example. 
 Then run snakemake with the following command pointing to your configuration file.
 
+# Testing
+
+To verify that the pipeline functions as expected, we can utilize the provided test data and configuration file available in the repository.
+When running the test with a single sample, it is necessary to exclude the final rule, isoranker_analysis, as this step requires multiple samples to execute correctly. To achieve this, we use the following command:
+
+```
+snakemake --configfile config/test_config.yaml \
+  --profile profiles/slurm-executor/ \
+  -p -k --verbose \
+  --directory results_test \
+  --omit-from isoranker_analysis
+```
+
+
 We suggest using the following flags for execution control: 
 ```
 -p (--printshellcmds): snakemake prints the shell commands that it executes for each rule.
