@@ -26,6 +26,12 @@ reference_genome: <path_to_fasta_file>
 
 ### 3. `pigeon_annot`
 Path to the GTF annotation file used for transcript annotation.
+Some tools like pigeon classify require a pre-indexed annotation file.
+To index, please try manually creating the .pgi index before running the pipeline. 
+```
+pigeon index /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/gtf/gencode.v46.annotation.gtf
+```
+
 ```yaml
 pigeon_annot: <path_to_gencode_gtf_file>
 ```
