@@ -500,20 +500,20 @@ rule qc_flnc:
 rule isoranker_analysis:
     input:
         read_stat="collapse/collapsed.read_stat.txt",
-        sample_info="../docs/Sample_info.csv",
+        sample_info="../docs/Sample_info.tsv",
         classification="pigeon/pigeon_classification.txt",
         genemap="../docs/genemap2.txt",
         hpo_file="../docs/phenotype.hpoa",
-        probands_file="../docs/Multiome_samples_clinical_findings_2.11.25.csv",
+        probands_file="../docs/Multiome_samples_clinical_findings_2.11.25.tsv",
     output:
-        "Output/browser/combined_results/merged_ranked_gene_with_phenotype.csv.gz",
-        "Output/browser/combined_results/merged_ranked_isoform_with_phenotype.csv.gz",
-        "Output/browser/lookup_tables/gene_coverage_lookup_table.csv.gz",
-        "Output/browser/lookup_tables/sample_gene_rankings_lookup_table.csv.gz",
-        "Output/intermediate/merged_ranked_gene.csv.gz",
-        "Output/intermediate/merged_ranked_isoform.csv.gz",
-        "Output/qc/gene_diversity.csv.gz",
-        "Output/qc/isoform_diversity.csv.gz",
+        "Output/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz",
+        "Output/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz",
+        "Output/browser/lookup_tables/gene_coverage_lookup_table.tsv.gz",
+        "Output/browser/lookup_tables/sample_gene_rankings_lookup_table.tsv.gz",
+        "Output/intermediate/merged_ranked_gene.tsv.gz",
+        "Output/intermediate/merged_ranked_isoform.tsv.gz",
+        "Output/qc/gene_diversity.tsv.gz",
+        "Output/qc/isoform_diversity.tsv.gz",
         "Output/qc/pca_plot.pdf",
     threads: config.get("threads", 4)
     resources:
