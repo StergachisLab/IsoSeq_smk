@@ -232,9 +232,6 @@ rule modify_vcf:
         """
 
 
-script_add_hp0 = os.path.join(workflow.basedir, "scripts/add_hp0.sh")
-
-
 rule whatshap_haplotag:
     conda:
         "envs/env.yml"
@@ -248,6 +245,8 @@ rule whatshap_haplotag:
     output:
         haplotagged_bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
         list_txt="whatshap/{individual}_{condition}_{label}.list.txt",
+    params:
+        script=workflow.source_path("scripts/add_hp0.sh"),
     shell:
         """
         if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then
@@ -257,13 +256,10 @@ rule whatshap_haplotag:
                 --output-haplotag-list {output.list_txt}
         else
             echo "No variants found or condition failed. Running add_hp0.sh."
-            sh {script_add_hp0} {input.bam} {output.haplotagged_bam}
+            sh {params.script} {input.bam} {output.haplotagged_bam}
             echo -e "#readname\thaplotype\tphaseset\tchromosome" > {output.list_txt}
         fi
         """
-
-
-script_extract = os.path.join(workflow.basedir, "scripts/extract_read_info.py")
 
 
 rule extract_read_info:
@@ -277,9 +273,11 @@ rule extract_read_info:
         "benchmark/extract_read_info/{individual}_{condition}_{label}.txt"
     resources:
         runtime=480,
+    params:
+        script=workflow.source_path("scripts/extract_read_info.py"),
     shell:
         """
-        python {script_extract} {input.bam} {output.txt}
+        python {params.script} {input.bam} {output.txt}
         """
 
 
@@ -437,9 +435,6 @@ rule pigeon_process:
         """
 
 
-script_dict = os.path.join(workflow.basedir, "scripts/create_dictionary.R")
-
-
 rule create_dictionary:
     conda:
         "envs/r-base.yml"
@@ -456,13 +451,12 @@ rule create_dictionary:
         runtime=980,
         mem_mb=500000,
         slurm_partition="cpu-g2",
+    params:
+        script=workflow.source_path("scripts/create_dictionary.R"),
     shell:
         """
-        Rscript {script_dict} {input.collapsed} whatshap/ {input.classification} {threads} tag
+        Rscript {params.script} {input.collapsed} whatshap/ {input.classification} {threads} tag
         """
-
-
-script_tag = os.path.join(workflow.basedir, "scripts/add_tags_to_bam.sh")
 
 
 rule add_tags_to_bam:
@@ -481,13 +475,12 @@ rule add_tags_to_bam:
         runtime=480,
         mem_mb=15000,
         slurm_partition="cpu-g2",
+    params:
+        script=workflow.source_path("scripts/add_tags_to_bam.sh"),
     shell:
         """
-        bash {script_tag} {input.bam} {input.dictionary} {output.bam} {threads}
+        bash {params.script} {input.bam} {input.dictionary} {output.bam} {threads}
         """
-
-
-script_qc = os.path.join(workflow.basedir, "scripts/qc_metrics.py")
 
 
 rule qc_flnc:
@@ -500,9 +493,10 @@ rule qc_flnc:
         plots_dir=directory("qc/{individual}_{condition}_{label}_plots"),
     params:
         output_dir="qc/{individual}_{condition}_{label}_plots",
+        script=workflow.source_path("scripts/qc_metrics.py"),
     shell:
         """
-        python {script_qc} {input.bam} {output.tsv} {params.output_dir}
+        python {params.script} {input.bam} {output.tsv} {params.output_dir}
         """
 
 
