@@ -12,3 +12,12 @@ use-conda: true
 conda-frontend: conda
 rerun-incomplete: true
 keep-going: true
+set-resources:
+  cluster:
+    slurm_partition: "cpu-g2"
+  create_dictionary:
+    slurm_partition: "cpu-g2"
+  add_tags_to_bam:
+    slurm_partition: "cpu-g2"
+  isoranker_analysis:
+    slurm_partition: "cpu-g2"

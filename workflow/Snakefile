@@ -313,7 +313,6 @@ rule cluster:
     resources:
         runtime=1800,
         mem_mb=550000,
-        slurm_partition="cpu-g2",
     benchmark:
         "benchmark/cluster/{individual}_all_conditions.txt"
     shell:
@@ -450,7 +449,6 @@ rule create_dictionary:
     resources:
         runtime=980,
         mem_mb=500000,
-        slurm_partition="cpu-g2",
     params:
         script=workflow.source_path("scripts/create_dictionary.R"),
     shell:
@@ -474,7 +472,6 @@ rule add_tags_to_bam:
     resources:
         runtime=480,
         mem_mb=15000,
-        slurm_partition="cpu-g2",
     params:
         script=workflow.source_path("scripts/add_tags_to_bam.sh"),
     shell:
@@ -522,7 +519,6 @@ rule isoranker_analysis:
     resources:
         runtime=480,
         mem_mb=500000,
-        slurm_partition="cpu-g2",
     benchmark:
         "benchmark/isoranker.txt"
     params:
