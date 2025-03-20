@@ -1,4 +1,3 @@
-
 name: IsoSeq Snakemake Workflow
 
 on: [push, pull_request]
@@ -9,25 +8,32 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3  # Use v3 for latest improvements
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
+    - name: Set up Miniconda
+      uses: conda-incubator/setup-miniconda@v2
       with:
-        python-version: '3.11'  
+        activate-environment: snakemake_env
+        python-version: 3.11
+        channels: conda-forge,bioconda,defaults
+        auto-activate-base: false
 
     - name: Install dependencies
+      shell: bash -l {0}  # Ensures the Conda environment is properly activated
       run: |
-        conda config --set channel_priority strict
-        conda env create --file snakemake_env.yml
-        conda activate snakemake_env
+        conda env create --file snakemake_env.yml --name snakemake_env
+        conda list  # Verify installation
 
-    - name: Execute Snakemake
+    - name: Activate environment and execute Snakemake
+      shell: bash -l {0}
       run: |
+        conda activate snakemake_env
         snakemake --profile profiles/slurm-executor/ --configfile config/test_config.yaml -p -k --dry-run --use-conda --omit-from isoranker_analysis
 
     - name: Generate HTML report
+      shell: bash -l {0}
       run: |
+        conda activate snakemake_env
         snakemake --report report.html
 
     - name: Deploy to GitHub Pages
