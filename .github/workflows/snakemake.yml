@@ -18,13 +18,13 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install snakemake
-        pip install snakemake-executor-plugin-slurm
+        conda config --set channel_priority strict
+        conda env create --file snakemake_env.yml
+        conda activate snakemake_env
 
     - name: Execute Snakemake
       run: |
-        snakemake --profile profiles/slurm-executor/ --configfile config/config.yaml -p -k --dry-run --use-conda
+        snakemake --profile profiles/slurm-executor/ --configfile config/test_config.yaml -p -k --dry-run --use-conda --omit-from isoranker_analysis
 
     - name: Generate HTML report
       run: |
