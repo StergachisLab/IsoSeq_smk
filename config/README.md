@@ -36,7 +36,15 @@ pigeon index test_data/gtf/gencode.v46.annotation.gtf
 pigeon_annot: <path_to_gencode_gtf_file>
 ```
 
-### 4. `threads`
+### 4. `docs_dir`
+Path to the supporting isoranker documents.
+Template uses docs nested inside our main IsoSeq_smk pipeline, with the relative path just above workflow. 
+Feel free to specify an absolute path where your files are stored. File extensions do matter, please ensure all files have the proper extensions prior to submission.
+```yaml
+docs_dir: "../docs"
+```
+
+### 5. `threads`
 Number of CPU threads to use for processing.
 ```yaml
 threads: <num_threads>
