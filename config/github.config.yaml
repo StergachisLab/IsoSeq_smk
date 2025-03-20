@@ -1,0 +1,15 @@
+individuals:
+  test_ind_1:
+    deepvariant_vcf: test_data/vcf/deepvariant_test.vcf.gz
+    untreated:
+      noncyclo_s344:
+      - test_data/bam/test_untreated.bam
+    treated:
+      cyclo_s345:
+        - test_data/bam/test_treated.bam
+reference_genome: test_data/reference/hg38_chr20.fa
+pigeon_annot: test_data/gtf/gencode.v46.test.annot.gtf
+docs_dir: docs
+threads: 4
+max_reads: 7000000
+downsample_reads: 100000
