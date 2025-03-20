@@ -9,7 +9,7 @@ individuals:
         - /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/bam/test_treated.bam
 reference_genome: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/reference/hg38_chr20.fa
 pigeon_annot: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/gtf/gencode.v46.test.annot.gtf
-docs_dir: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/docs
+docs_dir: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/docs/
 threads: 4
 max_reads: 7000000
 downsample_reads: 100000
