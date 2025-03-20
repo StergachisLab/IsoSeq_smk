@@ -5,7 +5,6 @@ import glob
 
 configfile: "config/config.yaml"
 
-
 # list of all individuals from the configuration file
 individuals = config["individuals"].keys()
 
@@ -500,11 +499,11 @@ rule qc_flnc:
 rule isoranker_analysis:
     input:
         read_stat="collapse/collapsed.read_stat.txt",
-        sample_info=os.path.join(config["docs_dir"], "Sample_info.tsv"),
+        sample_info=config["docs_dir"] + "/Sample_info.tsv",
         classification="pigeon/pigeon_classification.txt",
-        genemap=os.path.join(config["docs_dir"], "genemap2.txt"),
-        hpo_file=os.path.join(config["docs_dir"], "phenotype.hpoa"),
-        probands_file=os.path.join(config["docs_dir"], "Multiome_samples_clinical_findings_2.11.25.tsv"),
+        genemap=config["docs_dir"] + "/genemap2.txt",
+        hpo_file=config["docs_dir"] + "/phenotype.hpoa",
+        probands_file=config["docs_dir"] + "/Multiome_samples_clinical_findings_2.11.25.tsv",
     output:
         "Output/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz",
         "Output/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz",
