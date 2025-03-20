@@ -500,11 +500,11 @@ rule qc_flnc:
 rule isoranker_analysis:
     input:
         read_stat="collapse/collapsed.read_stat.txt",
-        sample_info=workflow.source_path("../docs/Sample_info.tsv"),
+        sample_info=config["docs_dir"] + "Sample_info.tsv",
         classification="pigeon/pigeon_classification.txt",
-        genemap=workflow.source_path("../docs/genemap2.txt"),
-        hpo_file=workflow.source_path("../docs/phenotype.hpoa"),
-        probands_file=workflow.source_path("../docs/Multiome_samples_clinical_findings_2.11.25.tsv"),
+        genemap=config["docs_dir"] + "genemap2.txt",
+        hpo_file=config["docs_dir"] + "phenotype.hpoa",
+        probands_file=config["docs_dir"] + "Multiome_samples_clinical_findings_2.11.25.tsv",
     output:
         "Output/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz",
         "Output/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz",
