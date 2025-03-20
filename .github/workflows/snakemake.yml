@@ -35,7 +35,7 @@ jobs:
       run: |
         conda activate snakemake_env
         snakemake --profile profiles/slurm-executor/ \
-                  --configfile config/test_config.yaml \
+                  --configfile config/config.github.yaml \
                   -p -k --dry-run --use-conda --omit-from isoranker_analysis
 
     - name: Generate Snakemake Report
