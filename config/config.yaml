@@ -301,7 +301,7 @@ individuals:
         - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00365/m84046_230829_213454_s3/MAS_3p--10X_IsoSeqX_bc09_5p/PS00365.m84046_230829_213454_s3.MAS_3p--10X_IsoSeqX_bc09_5p.flnc.bam
 reference_genome: /gscratch/stergachislab/assemblies/simple-names/hg38.fa
 pigeon_annot: /gscratch/stergachislab/asedeno/data/reference_files/gencode.v46.annotation.gtf
-docs_dir: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/docs/
+docs_dir: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/docs
 threads: 8
 max_reads: 7000000
 downsample_reads: 5000000
