@@ -20,6 +20,9 @@ isoform_noncyclo_counts (sn:i:)
 isoform_cyclo_counts (sc:i:)
 ```
 
+As an additional feature, we've included Isoranker["https://github.com/yhhc2/IsoRanker"] to compute statistical analyses on our set of samples [last rule of the pipeline]. While this is optional, this tool requires some additional supporting documents to work properly. We've provided the files that correspond to our current `config.yaml` list of samples under the: `docs/` folder. The path that points to this folder is found as an additional flag in the `config.yaml` file. 
+For any new run, please make sure your own `config.yaml` and `docs/` contain all the matching files and filepaths that you need for the pipeline to run correctly. 
+
 ## Installation
 
 You will need snakemake and the snakemake executor plugin to distribute jobs on a cluster.
