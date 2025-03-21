@@ -3,7 +3,6 @@
 suppressPackageStartupMessages({
   library(data.table)
   library(stringr)
-  library(feather)
   library(dplyr)
   library(purrr)
   library(tidyr)

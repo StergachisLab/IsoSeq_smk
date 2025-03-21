@@ -8,7 +8,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3  # Updated to v3 for better performance
+      uses: actions/checkout@v3
 
     - name: Set up Miniconda
       uses: conda-incubator/setup-miniconda@v2
@@ -22,33 +22,16 @@ jobs:
       shell: bash -l {0}
       run: |
         if conda env list | grep -q "snakemake_env"; then
-          echo "Environment snakemake_env already exists. Updating..."
           conda env update --file snakemake_env.yml --name snakemake_env
         else
-          echo "Creating new environment snakemake_env..."
           conda env create --file snakemake_env.yml --name snakemake_env
         fi
-        conda list  # Verify installation
+        conda list
 
-    - name: Activate environment and execute Snakemake
+    - name: Execute Snakemake
       shell: bash -l {0}
       run: |
         conda activate snakemake_env
         snakemake --profile profiles/slurm-executor/ \
                   --configfile config/github.config.yaml \
                   -p -k --dry-run --use-conda --omit-from isoranker_analysis
-
-    - name: Generate Snakemake Report
-      shell: bash -l {0}
-      run: |
-        conda activate snakemake_env
-        snakemake --report report.html
-
-    - name: Deploy Report to GitHub Pages
-      if: success()
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./
-        destination_dir: docs
-        publish_branch: gh-pages
