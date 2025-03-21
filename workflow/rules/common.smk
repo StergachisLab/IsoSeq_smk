@@ -20,18 +20,18 @@ def get_merge_input(wc):
     try:
         return config["individuals"][wc.individual][wc.condition][wc.label]
     except KeyError:
-        print(f"[WARNING] Skipping missing input for: {wc.individual} - {wc.condition} - {wc.label}")
+        print(f"[WARNING] Skipping: {wc.individual} / {wc.condition} / {wc.label}")
         return []
 
 # Combine all aligned BAMs for an individual, if conditions/labels exist
 def combine_labels(wildcards):
     individual = wildcards.individual
     result = []
-    individual_data = config["individuals"].get(individual, {})
+    indiv_data = config["individuals"].get(individual, {})
     for condition in ["treated", "untreated"]:
-        condition_data = individual_data.get(condition, {})
-        for label in condition_data:
-            result.append(f"merged/{individual}_{condition}_{label}_labeled.bam")
+        if condition in indiv_data:
+            for label in indiv_data[condition]:
+                result.append(f"merged/{individual}_{condition}_{label}_labeled.bam")
     return result
 
 # Get all haplotag info files (optional condition fallback)
