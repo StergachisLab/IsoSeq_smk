@@ -1,3 +1,5 @@
+# rules/common.smk
+
 import os
 
 # Check if "deepvariant_vcf" exists for an individual
@@ -15,7 +17,7 @@ def get_vcf_path(wildcards):
     vcf = config["individuals"].get(wildcards.individual, {}).get("deepvariant_vcf", "")
     return vcf if os.path.exists(vcf) else ""
 
-# Get input files for merging per label (with protection)
+# Get input files for merging per label (safe)
 def get_merge_input(wc):
     try:
         return config["individuals"][wc.individual][wc.condition][wc.label]
@@ -29,25 +31,27 @@ def combine_labels(wildcards):
     result = []
     indiv_data = config["individuals"].get(individual, {})
     for condition in ["treated", "untreated"]:
-        if condition in indiv_data:
+        if condition in indiv_data and isinstance(indiv_data[condition], dict):
             for label in indiv_data[condition]:
                 result.append(f"merged/{individual}_{condition}_{label}_labeled.bam")
     return result
 
-# Get all haplotag info files (optional condition fallback)
+# Get all haplotag info files
 def get_haplotag_files(wildcards):
     files = []
     for individual, indiv_data in config["individuals"].items():
         for condition in ["treated", "untreated"]:
-            for label in indiv_data.get(condition, {}):
-                files.append(f"whatshap/{individual}_{condition}_{label}.haplotagged.txt")
+            if condition in indiv_data and isinstance(indiv_data[condition], dict):
+                for label in indiv_data[condition]:
+                    files.append(f"whatshap/{individual}_{condition}_{label}.haplotagged.txt")
     return files
 
-# Get whatshap outputs (tagged BAMs)
+# Get whatshap outputs
 def whatshap_outs(wc):
     result = []
     for individual, indiv_data in config["individuals"].items():
         for condition in ["treated", "untreated"]:
-            for label in indiv_data.get(condition, {}):
-                result.append(f"whatshap/{individual}_{condition}_{label}.tagged.bam")
+            if condition in indiv_data and isinstance(indiv_data[condition], dict):
+                for label in indiv_data[condition]:
+                    result.append(f"whatshap/{individual}_{condition}_{label}.tagged.bam")
     return result
