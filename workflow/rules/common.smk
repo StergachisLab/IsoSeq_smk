@@ -1,72 +1,53 @@
-# check if "deepvariant_vcf" exists for an individual
+import os
+
+# Check if "deepvariant_vcf" exists for an individual
 def has_vcf(wildcards):
     vcf_path = get_vcf_path(wildcards)
-    return vcf_path is not None and os.path.exists(vcf_path)
+    return bool(vcf_path) and os.path.exists(vcf_path)
 
-
-# get modified phased vcf file
+# Get modified phased vcf file path
 def get_mod_phased_vcf(wildcards):
     phased_vcf = f"mod_vcf/{wildcards.individual}_mod.vcf.gz"
-    if os.path.exists(phased_vcf):
-        return phased_vcf
-    return None
+    return phased_vcf if os.path.exists(phased_vcf) else None
 
-
-# get vcf path for an individual
+# Get raw VCF path for an individual
 def get_vcf_path(wildcards):
-    vcf = config["individuals"][wildcards["individual"]].get("deepvariant_vcf")
-    if vcf and os.path.exists(vcf):
-        return vcf
-    return []
+    vcf = config["individuals"].get(wildcards.individual, {}).get("deepvariant_vcf", "")
+    return vcf if os.path.exists(vcf) else ""
 
-
-# get the merged input for an individual, condition, and label
+# Get input files for merging per label (with protection)
 def get_merge_input(wc):
-    if wc.label in config["individuals"][wc.individual][wc.condition]:
+    try:
         return config["individuals"][wc.individual][wc.condition][wc.label]
-    else:
-        raise KeyError(
-            f"Label {wc.label} not found for individual {wc.individual} "
-            f"and condition {wc.condition}."
-        )
+    except KeyError:
+        print(f"[WARNING] Skipping missing input for: {wc.individual} - {wc.condition} - {wc.label}")
+        return []
 
-
-# combine labels for an individual
+# Combine all aligned BAMs for an individual, if conditions/labels exist
 def combine_labels(wildcards):
     individual = wildcards.individual
-    rtn = []
+    result = []
+    individual_data = config["individuals"].get(individual, {})
     for condition in ["treated", "untreated"]:
-        # for condition in config["individuals"][individual]:
-        for label in config["individuals"][individual][condition]:
-            file = f"merged/{individual}_{condition}_{label}_labeled.bam"
-            rtn.append(file)
-    return rtn
+        condition_data = individual_data.get(condition, {})
+        for label in condition_data:
+            result.append(f"merged/{individual}_{condition}_{label}_labeled.bam")
+    return result
 
-
-# get haplotag files
+# Get all haplotag info files (optional condition fallback)
 def get_haplotag_files(wildcards):
     files = []
-    for individual in config["individuals"]:
+    for individual, indiv_data in config["individuals"].items():
         for condition in ["treated", "untreated"]:
-            # for condition in config["individuals"][individual]:
-            for label in config["individuals"][individual][condition]:
-                files.append(
-                    f"whatshap/{individual}_{condition}_{label}.haplotagged.txt"
-                )
+            for label in indiv_data.get(condition, {}):
+                files.append(f"whatshap/{individual}_{condition}_{label}.haplotagged.txt")
     return files
 
-
-# get whatshap output files
+# Get whatshap outputs (tagged BAMs)
 def whatshap_outs(wc):
-    template_f_path = "whatshap/{individual}_{condition}_{label}.tagged.bam"
-    rtn = []
-    for individual in config["individuals"]:
-        # for condition in config["individuals"][individual]:
+    result = []
+    for individual, indiv_data in config["individuals"].items():
         for condition in ["treated", "untreated"]:
-            for label in config["individuals"][individual][condition]:
-                rtn.append(
-                    template_f_path.format(
-                        individual=individual, condition=condition, label=label
-                    )
-                )
-    return rtn
+            for label in indiv_data.get(condition, {}):
+                result.append(f"whatshap/{individual}_{condition}_{label}.tagged.bam")
+    return result
