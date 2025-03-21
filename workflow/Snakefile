@@ -8,9 +8,14 @@ configfile: os.environ.get("SNAKEMAKE_CONFIG", "config/test_config.yaml")
 # List of all individuals from the configuration file
 individuals = config["individuals"].keys()
 
-# Get existing conditions per individual (skip missing ones)
+# Get existing conditions per individual (skip missing ones or empty dicts)
 conditions_per_individual = {
-    ind: [cond for cond in ["treated", "untreated"] if cond in config["individuals"][ind]]
+    ind: [
+        cond for cond in ["treated", "untreated"]
+        if cond in config["individuals"][ind]
+        and isinstance(config["individuals"][ind][cond], dict)
+        and len(config["individuals"][ind][cond]) > 0
+    ]
     for ind in individuals
 }
 
@@ -24,12 +29,17 @@ labels = {
 }
 
 # Define valid combinations of individual, condition, and label
-combinations = [
-    {"individual": ind, "condition": cond, "label": lbl}
-    for ind in individuals
-    for cond in conditions_per_individual[ind]
-    for lbl in labels[ind][cond]
-]
+combinations = []
+for ind in individuals:
+    for cond in conditions_per_individual[ind]:
+        for lbl in labels[ind][cond]:
+            files = config["individuals"][ind][cond][lbl]
+            if isinstance(files, list) and len(files) > 0:
+                combinations.append({
+                    "individual": ind,
+                    "condition": cond,
+                    "label": lbl
+                })
 
 # Debug: show combinations being processed
 print("Valid combinations to be processed:")
@@ -48,33 +58,443 @@ wildcard_constraints:
 
 include: "rules/common.smk"
 
+combinations_dict = {
+    "individual": [c["individual"] for c in combinations],
+    "condition": [c["condition"] for c in combinations],
+    "label": [c["label"] for c in combinations],
+}
+
 rule all:
     input:
-        expand(
-            "tag/{individual}_{condition}_{label}.tagged.bam",
-            zip,
-            individual=[comb["individual"] for comb in combinations],
-            condition=[comb["condition"] for comb in combinations],
-            label=[comb["label"] for comb in combinations],
+        expand("tag/{individual}_{condition}_{label}.tagged.bam", zip, **combinations_dict),
+        expand("qc/{individual}_{condition}_{label}_qc_summary.tsv", zip, **combinations_dict),
+        expand("qc/{individual}_{condition}_{label}_plots", zip, **combinations_dict),
+        "collapse/collapsed.gff" if combinations else [],
+        "tag/dictionary.tsv.gz" if combinations else [],
+        "pigeon/sorted.gff" if combinations else [],
+        "pigeon/pigeon_classification.txt" if combinations else [],
+        "Output/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz" if combinations else [],
+        "Output/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz" if combinations else [],
+        "Output/browser/lookup_tables/gene_coverage_lookup_table.tsv.gz" if combinations else [],
+        "Output/browser/lookup_tables/sample_gene_rankings_lookup_table.tsv.gz" if combinations else [],
+        "Output/intermediate/merged_ranked_gene.tsv.gz" if combinations else [],
+        "Output/intermediate/merged_ranked_isoform.tsv.gz" if combinations else [],
+        "Output/qc/gene_diversity.tsv.gz" if combinations else [],
+        "Output/qc/isoform_diversity.tsv.gz" if combinations else [],
+        "Output/qc/pca_plot.pdf" if combinations else []
+
+rule merge_individual_condition:
+    conda:
+        "envs/env.yml"
+    input:
+        get_merge_input,
+    output:
+        bam="merged/{individual}_{condition}_{label}_merged.bam",
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+    benchmark:
+        "benchmark/merge_individual_condition/{individual}_{condition}_{label}.txt"
+    shell:
+        r"""
+        set -euo pipefail
+
+        max_reads={config[max_reads]}
+        downsample_reads={config[downsample_reads]}
+
+        input_files=({input})
+        num_files=${{#input_files[@]}}
+
+        if [ $num_files -eq 1 ]; then
+            # Only one file, just copy it
+            cp {input} {output.bam}
+        else
+            # Merge multiple files
+            samtools merge -@ {threads} {output.bam} {input}
+        fi
+
+        # Check total reads in the resulting BAM file
+        total_reads=$(samtools view -c {output.bam})
+        echo "Total reads in merged BAM: $total_reads"
+
+        # Downsampling if needed
+        if (( $total_reads > $max_reads )); then
+            echo "File {output.bam} has more than $max_reads reads ($total_reads). Downsampling to ~$downsample_reads reads..."
+            temp_downsampled_bam=$(mktemp)
+            fraction=$(echo "scale=6; $downsample_reads / $total_reads" | bc)
+            fraction=$(echo "$fraction" | sed 's/^0//')
+            samtools view -s 42$fraction -b {output.bam} > "$temp_downsampled_bam"
+            mv "$temp_downsampled_bam" {output.bam}
+            echo "Downsampling completed and replaced the original merged BAM."
+        else
+            echo "File {output.bam} has less than $max_reads reads. No downsampling performed."
+        fi
+        """
+
+
+rule label_reads_with_condition:
+    conda:
+        "envs/env.yml"
+    input:
+        bam="merged/{individual}_{condition}_{label}_merged.bam",
+    output:
+        bam="merged/{individual}_{condition}_{label}_labeled.bam",
+    benchmark:
+        "benchmark/label_reads_condition/{individual}_{condition}_{label}.txt"
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+    shell:
+        """
+        samtools view -@ {threads} -h {input.bam} | \
+        awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}' | \
+        samtools view -bS - > {output.bam}
+        """
+
+
+rule align_sample:
+    conda:
+        "envs/env.yml"
+    input:
+        bam="merged/{individual}_{condition}_{label}_labeled.bam",
+    output:
+        aligned="aligned/{individual}_{condition}_{label}_aligned.bam",
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+        mem_mb=130000,
+    benchmark:
+        "benchmark/align_samples/{individual}_{condition}_{label}.txt"
+    shell:
+        """
+        pbmm2 align {config[reference_genome]} {input.bam} {output.aligned} \
+            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
+        """
+
+
+rule modify_rg:
+    conda:
+        "envs/env.yml"
+    input:
+        bam="aligned/{individual}_{condition}_{label}_aligned.bam",
+    output:
+        bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
+        bai="aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai",
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+    shell:
+        """
+        samtools addreplacerg -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' \
+            -o {output.bam} {input.bam}
+        samtools index {output.bam}
+        """
+
+
+rule modify_vcf:
+    conda:
+        "envs/env.yml"
+    input:
+        vcf=get_vcf_path,
+    output:
+        mod_vcf="mod_vcf/{individual}_mod.vcf.gz",
+        mod_vcf_tbi="mod_vcf/{individual}_mod.vcf.gz.tbi",
+    threads: config.get("threads", 2)
+    resources:
+        runtime=480,
+    shell:
+        r"""
+        if [ ! -s "{input.vcf}" ]; then
+            # No VCF provided, create an empty one
+            (
+                echo "##fileformat=VCFv4.2"; 
+                echo "#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT UnnamedSample"
+            ) | bgzip -c > {output.mod_vcf} && tabix -p vcf {output.mod_vcf}
+        else
+            # Process the existing VCF
+            (zcat {input.vcf} 2>/dev/null || cat {input.vcf}) \
+            | bcftools view \
+            | awk 'BEGIN {{FS=OFS="\t"}} /^#CHROM/ {{$10="UnnamedSample"; print; next}} {{print}}' \
+            | bgzip -@ {threads} -c > {output.mod_vcf} && \
+            tabix -p vcf {output.mod_vcf}
+        fi
+        """
+
+
+rule whatshap_haplotag:
+    conda:
+        "envs/env.yml"
+    resources:
+        runtime=480,
+        mem_mb=130000,
+    input:
+        bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
+        phased_vcf_gz="mod_vcf/{individual}_mod.vcf.gz",
+        reference=config["reference_genome"],
+    output:
+        haplotagged_bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
+        list_txt="whatshap/{individual}_{condition}_{label}.list.txt",
+    params:
+        script=workflow.source_path("scripts/add_hp0.sh"),
+    shell:
+        """
+        if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then
+            echo "Variants found. Running whatshap haplotag."
+            whatshap haplotag {input.phased_vcf_gz} {input.bam} \
+                -o {output.haplotagged_bam} --reference {input.reference} \
+                --output-haplotag-list {output.list_txt}
+        else
+            echo "No variants found or condition failed. Running add_hp0.sh."
+            sh {params.script} {input.bam} {output.haplotagged_bam}
+            echo -e "#readname\thaplotype\tphaseset\tchromosome" > {output.list_txt}
+        fi
+        """
+
+
+rule extract_read_info:
+    conda:
+        "envs/env.yml"
+    input:
+        bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
+    output:
+        txt="whatshap/{individual}_{condition}_{label}.haplotagged.txt",
+    benchmark:
+        "benchmark/extract_read_info/{individual}_{condition}_{label}.txt"
+    resources:
+        runtime=480,
+    params:
+        script=workflow.source_path("scripts/extract_read_info.py"),
+    shell:
+        """
+        python {params.script} {input.bam} {output.txt}
+        """
+
+
+rule merge_samples:
+    conda:
+        "envs/env.yml"
+    input:
+        bam=combine_labels,
+    output:
+        bam="merged/{individual}_all_conditions_merged.bam",
+        bai="merged/{individual}_all_conditions_merged.bam.bai",
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+    benchmark:
+        "benchmark/merge_samples/{individual}_all_conditions.txt"
+    shell:
+        """
+        samtools merge -@ {threads} {output.bam} {input.bam}
+        samtools index {output.bam}
+        """
+
+
+rule cluster:
+    conda:
+        "envs/env.yml"
+    input:
+        bam="merged/{individual}_all_conditions_merged.bam",
+        bai="merged/{individual}_all_conditions_merged.bam.bai",
+    output:
+        clustered="clustered/{individual}_clustered.bam",
+    threads: 20
+    resources:
+        runtime=1800,
+        mem_mb=550000,
+    benchmark:
+        "benchmark/cluster/{individual}_all_conditions.txt"
+    shell:
+        """
+        isoseq3 cluster {input.bam} {output.clustered} --verbose -j {threads} --singletons
+        """
+
+
+rule align:
+    conda:
+        "envs/env.yml"
+    input:
+        "clustered/{individual}_clustered.bam",
+    output:
+        aligned="aligned/{individual}_aligned.bam",
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+        mem_mb=130000,
+    benchmark:
+        "benchmark/align/{individual}_aligned.txt"
+    shell:
+        """
+        pbmm2 align {config[reference_genome]} {input} {output.aligned} \
+            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
+        """
+
+
+rule label_transcripts:
+    conda:
+        "envs/env.yml"
+    input:
+        bam="aligned/{individual}_aligned.bam",
+    output:
+        bam="aligned/{individual}_aligned_labeled.bam",
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+        mem_mb=80000,
+    shell:
+        r"""
+        (
+            samtools view -@ {threads} -h {input.bam} \
+            | awk -v id={wildcards.individual} 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}'
+        ) | samtools view -@ {threads} -bS - > {output.bam}
+        """
+
+
+rule merge_all_aligned:
+    conda:
+        "envs/env.yml"
+    input:
+        lambda wildcards: expand(
+            "aligned/{individual}_aligned_labeled.bam",
+            individual=config["individuals"].keys(),
         ),
+    output:
+        "aligned/all_individuals_aligned_merged.bam",
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+        mem_mb=80000,
+    benchmark:
+        "benchmark/merge_all_aligned/all_aligned_merged.txt"
+    shell:
+        """
+        samtools merge -@ {threads} {output} {input}
+        samtools index {output}
+        """
+
+
+rule collapse:
+    conda:
+        "envs/env.yml"
+    input:
+        "aligned/all_individuals_aligned_merged.bam",
+    output:
+        collapsed_gff="collapse/collapsed.gff",
+        collapsed_abundance="collapse/collapsed.abundance.txt",
+        collapsed_readstat="collapse/collapsed.read_stat.txt",
+        collapsed_count="collapse/collapsed.flnc_count.txt",
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+        mem_mb=80000,
+    benchmark:
+        "benchmark/collapse/collapse.txt"
+    shell:
+        """
+        isoseq3 collapse --num-threads {threads} {input} {output.collapsed_gff}
+        """
+
+
+rule pigeon_process:
+    conda:
+        "envs/env.yml"
+    input:
+        collapsed_gff="collapse/collapsed.gff",
+        collapsed_count="collapse/collapsed.flnc_count.txt",
+    output:
+        sorted_gff="pigeon/sorted.gff",
+        classification="pigeon/pigeon_classification.txt",
+        report="pigeon/saturation.txt",
+    params:
+        pigeon_annot=config["pigeon_annot"],
+    benchmark:
+        "benchmark/pigeon_process/pigeon.txt"
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+        mem_mb=80000,
+    shell:
+        """
+        pigeon sort {input.collapsed_gff} -o {output.sorted_gff}
+        pigeon classify {output.sorted_gff} {params.pigeon_annot} {config[reference_genome]} \
+            --flnc {input.collapsed_count} -d pigeon -o 'pigeon'
+        pigeon filter {output.classification}
+        pigeon report pigeon/pigeon_classification.filtered_lite_classification.txt {output.report}
+        """
+
+
+rule create_dictionary:
+    conda:
+        "envs/r-base.yml"
+    input:
+        collapsed="collapse/collapsed.read_stat.txt",
+        haplotag=get_haplotag_files,
+        classification="pigeon/pigeon_classification.txt",
+    output:
         "tag/dictionary.tsv.gz",
-        "collapse/collapsed.gff",
-        "pigeon/sorted.gff",
-        "pigeon/pigeon_classification.txt",
-        expand(
-            "qc/{individual}_{condition}_{label}_qc_summary.tsv",
-            zip,
-            individual=[comb["individual"] for comb in combinations],
-            condition=[comb["condition"] for comb in combinations],
-            label=[comb["label"] for comb in combinations],
-        ),
-        expand(
-            "qc/{individual}_{condition}_{label}_plots",
-            zip,
-            individual=[comb["individual"] for comb in combinations],
-            condition=[comb["condition"] for comb in combinations],
-            label=[comb["label"] for comb in combinations],
-        ),
+    benchmark:
+        "benchmark/create_dictionary/dictionary.txt"
+    threads: config.get("threads", 4)
+    resources:
+        runtime=980,
+        mem_mb=500000,
+    params:
+        script=workflow.source_path("scripts/create_dictionary.R"),
+    shell:
+        """
+        Rscript {params.script} {input.collapsed} whatshap/ {input.classification} {threads} tag
+        """
+
+
+rule add_tags_to_bam:
+    conda:
+        "envs/env.yml"
+    input:
+        bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
+        dictionary="tag/dictionary.tsv.gz",
+    output:
+        bam="tag/{individual}_{condition}_{label}.tagged.bam",
+        bai="tag/{individual}_{condition}_{label}.tagged.bam.bai",
+    benchmark:
+        "benchmark/add_tags_to_bam/{individual}_{condition}_{label}_tagged.txt"
+    threads: config.get("threads", 8)
+    resources:
+        runtime=480,
+        mem_mb=15000,
+    params:
+        script=workflow.source_path("scripts/add_tags_to_bam.sh"),
+    shell:
+        """
+        bash {params.script} {input.bam} {input.dictionary} {output.bam} {threads}
+        """
+
+
+rule qc_flnc:
+    conda:
+        "envs/python-env.yml"
+    input:
+        bam="tag/{individual}_{condition}_{label}.tagged.bam",
+    output:
+        tsv="qc/{individual}_{condition}_{label}_qc_summary.tsv",
+        plots_dir=directory("qc/{individual}_{condition}_{label}_plots"),
+    params:
+        output_dir="qc/{individual}_{condition}_{label}_plots",
+        script=workflow.source_path("scripts/qc_metrics.py"),
+    shell:
+        """
+        python {params.script} {input.bam} {output.tsv} {params.output_dir}
+        """
+
+
+rule isoranker_analysis:
+    input:
+        read_stat="collapse/collapsed.read_stat.txt",
+        sample_info=config["docs_dir"] + "/Sample_info.tsv",
+        classification="pigeon/pigeon_classification.txt",
+        genemap=config["docs_dir"] + "/genemap2.txt",
+        hpo_file=config["docs_dir"] + "/phenotype.hpoa",
+        probands_file=config["docs_dir"] + "/Multiome_samples_clinical_findings_2.11.25.tsv",
+    output:
         "Output/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz",
         "Output/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz",
         "Output/browser/lookup_tables/gene_coverage_lookup_table.tsv.gz",
@@ -84,3 +504,24 @@ rule all:
         "Output/qc/gene_diversity.tsv.gz",
         "Output/qc/isoform_diversity.tsv.gz",
         "Output/qc/pca_plot.pdf",
+    threads: config.get("threads", 4)
+    resources:
+        runtime=480,
+        mem_mb=500000,
+    benchmark:
+        "benchmark/isoranker.txt"
+    params:
+        output_dir="Output/",
+    conda:
+        "envs/isoranker.yml"
+    shell:
+        """
+        isoranker_pb_run_analysis \
+          --read_stat_path {input.read_stat} \
+          --reference_fasta_path {config[reference_genome]} \
+          --sample_info_path {input.sample_info} \
+          --classification_path {input.classification} \
+          --genemap_path {input.genemap} \
+          --hpo_file_path {input.hpo_file} \
+          --probands_file_path {input.probands_file}
+        """
