@@ -1,15 +1,13 @@
 individuals:
-  test_ind_1:
-    deepvariant_vcf: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/vcf/deepvariant_test.vcf.gz
+  UDN633333:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00115/hg38/results/pipelines/k-mer-variant-phasing/results/PS00115/hiphase/PS00115.vcf.gz
     untreated:
-      noncyclo_s344:
-      - /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/bam/test_untreated.bam
-    treated:
-      cyclo_s345:
-        - /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/bam/test_treated.bam
-reference_genome: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/reference/hg38_chr20.fa
-pigeon_annot: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/test_data/gtf/gencode.v46.test.annot.gtf
-docs_dir: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/docs
-threads: 4
+      non-cyclo_PS00115:
+      - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00115/m64076_211014_093303/NEB_5p--NEB_Clontech_3p/PS00115.m64076_211014_093303.NEB_5p--NEB_Clontech_3p.flnc.bam
+    treated: {}
+reference_genome: /gscratch/stergachislab/assemblies/simple-names/hg38.fa
+pigeon_annot: /gscratch/stergachislab/asedeno/data/reference_files/gencode.v46.annotation.gtf  # this can be modified if you have your own folder
+docs_dir: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/docs  
+threads: 8
 max_reads: 7000000
-downsample_reads: 100000
+downsample_reads: 5000000
