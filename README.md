@@ -51,7 +51,7 @@ To verify that the pipeline functions as expected, we can utilize the provided t
 When running the test with a single sample, it is necessary to exclude the final rule, isoranker_analysis, as this step requires multiple samples to execute correctly. To achieve this, we use the following command:
 
 ```
-snakemake --configfile config/test_config.yaml \
+snakemake --configfile config/github.config.yaml \
   --profile profiles/slurm-executor/ \
   -p -k --verbose \
   --directory results_test \
