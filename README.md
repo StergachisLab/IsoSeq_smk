@@ -40,14 +40,18 @@ conda activate snakemake_env
 
 ## Testing
 
-First set up a configuration file. See  `config/github.config.yaml` for a template and `config/test_config.yaml` for a commented example when running a single condition. See `config/config.yaml`  for a full example processing multiple samples with different SMRTcells and and conditions.
+First set up a configuration file. 
+See  `config/github.config.yaml` for a template. 
+See `config/test_config.yaml` for a commented example when running a single condition.  
+See `config/config.yaml`  for a full example processing multiple samples with different SMRTcells and and conditions.
+The pipeline works when full paths are used to define all files and folders. 
 Then run snakemake with the following command pointing to your own customized configuration file.
 
 To verify that the pipeline functions as expected, we can utilize the provided test data and configuration file available in the repository.
 When running the test with a single sample, it is necessary to exclude the final rule, isoranker_analysis, as this step requires multiple samples to execute correctly. To achieve this, we use the following command:
 
 ```
-snakemake --configfile config/github.config.yaml \
+snakemake --configfile config/test_config.yaml \
   --profile profiles/slurm-executor/ \
   -p -k --verbose \
   --directory results_test \
