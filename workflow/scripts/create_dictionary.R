@@ -49,9 +49,10 @@ counts_hap <- dictionary %>%
     iso_hap_noncyclo_counts = if ("untreated" %in% colnames(.)) paste0("hn:i:", untreated) else "hn:i:0",
     iso_hap_cyclo_counts = if ("treated" %in% colnames(.)) paste0("hc:i:", treated) else "hc:i:0"
   ) %>%
+  select(-any_of(c("treated", "untreated")))
   #mutate(iso_hap_noncyclo_counts = paste0("hn:i:", untreated),
   #       iso_hap_cyclo_counts = paste0("hc:i:", treated)) %>%
-  select(-treated, -untreated)
+  #select(-treated, -untreated)
 
 counts <- dictionary %>%
   group_by(sample, isoform, condition) %>%
@@ -63,9 +64,10 @@ counts <- dictionary %>%
     iso_noncyclo_counts = if ("untreated" %in% colnames(.)) paste0("sn:i:", untreated) else "sn:i:0",
     iso_cyclo_counts = if ("treated" %in% colnames(.)) paste0("sc:i:", treated) else "sc:i:0"
   ) %>%
+ select(-any_of(c("treated", "untreated")))
   #mutate(iso_noncyclo_counts = paste0("sn:i:", untreated),
   #       iso_cyclo_counts = paste0("sc:i:", treated)) %>%
-  select(-treated, -untreated)
+  #select(-treated, -untreated)
 
 dictionary <- left_join(dictionary, counts_hap) %>%
   left_join(counts) %>%
