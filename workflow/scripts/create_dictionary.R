@@ -45,8 +45,12 @@ counts_hap <- dictionary %>%
   mutate(n_hap_cond = n) %>%
   pivot_wider(id_cols = c(sample, isoform, Haplotype), names_from = c(condition), values_from = n_hap_cond) %>%
  mutate(across(everything(), ~replace(., is.na(.), 0))) %>%
-  mutate(iso_hap_noncyclo_counts = paste0("hn:i:", untreated),
-         iso_hap_cyclo_counts = paste0("hc:i:", treated)) %>%
+  mutate(
+    iso_hap_noncyclo_counts = if ("untreated" %in% colnames(.)) paste0("hn:i:", untreated) else "hn:i:0",
+    iso_hap_cyclo_counts = if ("treated" %in% colnames(.)) paste0("hc:i:", treated) else "hc:i:0"
+  ) %>%
+  #mutate(iso_hap_noncyclo_counts = paste0("hn:i:", untreated),
+  #       iso_hap_cyclo_counts = paste0("hc:i:", treated)) %>%
   select(-treated, -untreated)
 
 counts <- dictionary %>%
@@ -55,8 +59,12 @@ counts <- dictionary %>%
   mutate(n_cond = n) %>%
   pivot_wider(c(sample, isoform), names_from = condition, values_from = n_cond) %>%
  mutate(across(everything(), ~replace(., is.na(.), 0))) %>%
-  mutate(iso_noncyclo_counts = paste0("sn:i:", untreated),
-         iso_cyclo_counts = paste0("sc:i:", treated)) %>%
+    mutate(
+    iso_noncyclo_counts = if ("untreated" %in% colnames(.)) paste0("sn:i:", untreated) else "sn:i:0",
+    iso_cyclo_counts = if ("treated" %in% colnames(.)) paste0("sc:i:", treated) else "sc:i:0"
+  ) %>%
+  #mutate(iso_noncyclo_counts = paste0("sn:i:", untreated),
+  #       iso_cyclo_counts = paste0("sc:i:", treated)) %>%
   select(-treated, -untreated)
 
 dictionary <- left_join(dictionary, counts_hap) %>%
