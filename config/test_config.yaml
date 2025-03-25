@@ -6,7 +6,7 @@ individuals:
       - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00115/m64076_211014_093303/NEB_5p--NEB_Clontech_3p/PS00115.m64076_211014_093303.NEB_5p--NEB_Clontech_3p.flnc.bam
     treated: {}
 reference_genome: /gscratch/stergachislab/assemblies/simple-names/hg38.fa
-pigeon_annot: /gscratch/stergachislab/asedeno/data/reference_files/gencode.v46.annotation.gtf  # this can be modified if you have your own folder
+pigeon_annot: /gscratch/stergachislab/asedeno/data/reference_files/gencode.v47.annotation.gtf  # this can be modified if you have your own folder
 docs_dir: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/docs  
 threads: 8
 max_reads: 7000000
