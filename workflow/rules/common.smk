@@ -1,6 +1,14 @@
 # rules/common.smk
 
 import os
+import gzip
+
+dummy_vcf = "mod_vcf/empty.vcf.gz"
+os.makedirs(os.path.dirname(dummy_vcf), exist_ok=True)
+if not os.path.exists(dummy_vcf):
+    with gzip.open(dummy_vcf, "wt") as f:
+        f.write("##fileformat=VCFv4.2\n#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT UnnamedSample\n")
+
 
 # Check if "deepvariant_vcf" exists for an individual
 def has_vcf(wildcards):
