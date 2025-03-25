@@ -394,6 +394,20 @@ rule collapse:
         isoseq3 collapse --num-threads {threads} {input} {output.collapsed_gff}
         """
 
+rule pigeon_prepare_annot:
+    conda:
+        "envs/env.yml"
+    input:
+        gtf=config["pigeon_annot"]
+    output:
+        gtf=lambda wildcards: get_prepared_annot_paths(wildcards)[0],
+        index=lambda wildcards: get_prepared_annot_paths(wildcards)[1]
+    shell:
+        """
+        gunzip -c {input.gtf} > temp_annotation.gtf
+        pigeon prepare temp_annotation.gtf --output {output.gtf}
+        rm temp_annotation.gtf
+        """
 
 rule pigeon_process:
     conda:
@@ -401,22 +415,24 @@ rule pigeon_process:
     input:
         collapsed_gff="collapse/collapsed.gff",
         collapsed_count="collapse/collapsed.flnc_count.txt",
+        prepared_gtf=lambda wildcards: get_prepared_annot_paths(wildcards)[0],
+        prepared_index=lambda wildcards: get_prepared_annot_paths(wildcards)[1]
     output:
         sorted_gff="pigeon/sorted.gff",
         classification="pigeon/pigeon_classification.txt",
-        report="pigeon/saturation.txt",
+        report="pigeon/saturation.txt"
     params:
-        pigeon_annot=config["pigeon_annot"],
+        reference=config["reference_genome"]
     benchmark:
         "benchmark/pigeon_process/pigeon.txt"
     threads: config.get("threads", 4)
     resources:
         runtime=480,
-        mem_mb=80000,
+        mem_mb=80000
     shell:
         """
         pigeon sort {input.collapsed_gff} -o {output.sorted_gff}
-        pigeon classify {output.sorted_gff} {params.pigeon_annot} {config[reference_genome]} \
+        pigeon classify {output.sorted_gff} {input.prepared_gtf} {params.reference} \
             --flnc {input.collapsed_count} -d pigeon -o 'pigeon'
         pigeon filter {output.classification}
         pigeon report pigeon/pigeon_classification.filtered_lite_classification.txt {output.report}
