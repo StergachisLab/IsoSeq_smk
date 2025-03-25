@@ -410,7 +410,7 @@ rule pigeon_prepare_annot:
             cp {input.gtf} temp_annotation.gtf
         fi
 
-        pigeon prepare temp_annotation.gtf --output {output.sorted_gtf}
+        pigeon prepare temp_annotation.gtf --output {output.gtf}
         rm temp_annotation.gtf
         """
 
