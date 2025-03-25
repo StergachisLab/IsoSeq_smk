@@ -397,17 +397,19 @@ rule collapse:
         """
 
 rule pigeon_prepare_annot:
-    conda:
-        "envs/env.yml"
     input:
-        gtf=config["pigeon_annot"]
+        gtf="your_path_to_gtf"
     output:
-        gtf=prepared_gtf,
-        index=prepared_index
+        sorted_gtf="annotations/{name}.sorted.gtf"
     shell:
-        """
-        gunzip -c {input.gtf} > temp_annotation.gtf
-        pigeon prepare temp_annotation.gtf --output {output.gtf}
+        r"""
+        if file {input.gtf} | grep -q 'gzip compressed'; then
+            gunzip -c {input.gtf} > temp_annotation.gtf
+        else
+            cp {input.gtf} temp_annotation.gtf
+        fi
+
+        pigeon prepare temp_annotation.gtf --output {output.sorted_gtf}
         rm temp_annotation.gtf
         """
 
