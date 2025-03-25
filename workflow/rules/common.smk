@@ -56,9 +56,8 @@ def whatshap_outs(wc):
                     result.append(f"whatshap/{individual}_{condition}_{label}.tagged.bam")
     return result
 
-def get_prepared_annot_paths(wildcards):
-    # Extract base name without .gtf or .gtf.gz
-    base = os.path.basename(config["pigeon_annot"]).replace(".gtf.gz", "").replace(".gtf", "")
-    prepared_gtf = f"annotations/{base}.sorted.gtf"
-    prepared_index = f"{prepared_gtf}.pgi"
-    return prepared_gtf, prepared_index
+
+base = os.path.basename(config["pigeon_annot"]).replace(".gtf.gz", "").replace(".gtf", "")
+prepared_gtf = f"annotations/{base}.sorted.gtf"
+prepared_index = f"{prepared_gtf}.pgi"
+
