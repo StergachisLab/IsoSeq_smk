@@ -196,5 +196,21 @@ plot_read_length_by_category(
     os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_read_length_by_sb.pdf')}")
 )
 
-    
+# Save category counts to TSV
+st_counts_df = pd.DataFrame([
+    {"structural_category": k, "read_count": len(v)} for k, v in st_length_dict.items()
+])
+st_counts_df.to_csv(
+    os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_st_counts.tsv')}"),
+    sep="\t", index=False
+)
+
+sb_counts_df = pd.DataFrame([
+    {"subcategory": k, "read_count": len(v)} for k, v in sb_length_dict.items()
+])
+sb_counts_df.to_csv(
+    os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_sb_counts.tsv')}"),
+    sep="\t", index=False
+)
+
     print(f"Finished processing {bam_file}")
