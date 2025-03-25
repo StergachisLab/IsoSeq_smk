@@ -15,7 +15,10 @@ def get_mod_phased_vcf(wildcards):
 # Get raw VCF path for an individual
 def get_vcf_path(wildcards):
     vcf = config["individuals"].get(wildcards.individual, {}).get("deepvariant_vcf", "")
-    return vcf if os.path.exists(vcf) else "empty.vcf"
+    if vcf and os.path.exists(vcf):
+        return vcf
+    return "mod_vcf/empty.vcf.gz"
+
 
 # Get input files for merging per label (safe)
 def get_merge_input(wc):
