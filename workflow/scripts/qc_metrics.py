@@ -152,4 +152,49 @@ if __name__ == "__main__":
                        os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_mapq.pdf')}"),
                        bins=30, color="black")
 
+def plot_read_length_by_category(length_dict, category_name, output_file):
+    """Generate overlapped KDE plots for read length by category."""
+    plt.figure(figsize=(10, 6))
+    for category, lengths in length_dict.items():
+        if len(lengths) > 1:  # Avoid plotting single-point KDE
+            sns.kdeplot(lengths, label=category, fill=True, alpha=0.4)
+    plt.xlabel("Read Length")
+    plt.ylabel("Density")
+    plt.title(f"Read Length Distribution by {category_name}")
+    plt.legend(title=category_name)
+    plt.tight_layout()
+    plt.savefig(output_file, format="pdf")
+    plt.close()
+
+# Prepare dicts for st and sb category-based read lengths
+st_length_dict = {}
+sb_length_dict = {}
+
+# Re-open BAM to collect lengths by tag
+bam = pysam.AlignmentFile(bam_file, "rb")
+for read in bam:
+    read_length = read.query_length
+    if read_length is None:
+        continue
+    if read.has_tag("st"):
+        st = read.get_tag("st")
+        st_length_dict.setdefault(st, []).append(read_length)
+    if read.has_tag("sb"):
+        sb = read.get_tag("sb")
+        sb_length_dict.setdefault(sb, []).append(read_length)
+bam.close()
+
+# Plot and save
+plot_read_length_by_category(
+    st_length_dict,
+    "Structural Category (st)",
+    os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_read_length_by_st.pdf')}")
+)
+plot_read_length_by_category(
+    sb_length_dict,
+    "Subcategory (sb)",
+    os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_read_length_by_sb.pdf')}")
+)
+
+    
     print(f"Finished processing {bam_file}")
