@@ -400,8 +400,8 @@ rule pigeon_prepare_annot:
     input:
         gtf=config["pigeon_annot"]
     output:
-        gtf=lambda wildcards: get_prepared_annot_paths(wildcards)[0],
-        index=lambda wildcards: get_prepared_annot_paths(wildcards)[1]
+        gtf=prepared_gtf,
+        index=prepared_index
     shell:
         """
         gunzip -c {input.gtf} > temp_annotation.gtf
@@ -415,8 +415,8 @@ rule pigeon_process:
     input:
         collapsed_gff="collapse/collapsed.gff",
         collapsed_count="collapse/collapsed.flnc_count.txt",
-        prepared_gtf=lambda wildcards: get_prepared_annot_paths(wildcards)[0],
-        prepared_index=lambda wildcards: get_prepared_annot_paths(wildcards)[1]
+        prepared_gtf=prepared_gtf,
+        prepared_index=prepared_index
     output:
         sorted_gff="pigeon/sorted.gff",
         classification="pigeon/pigeon_classification.txt",
