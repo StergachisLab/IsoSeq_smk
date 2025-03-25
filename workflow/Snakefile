@@ -398,9 +398,10 @@ rule collapse:
 
 rule pigeon_prepare_annot:
     input:
-        gtf="your_path_to_gtf"
+        gtf=config["pigeon_annot"]
     output:
-        sorted_gtf="annotations/{name}.sorted.gtf"
+        gtf=prepared_gtf,
+        index=prepared_index
     shell:
         r"""
         if file {input.gtf} | grep -q 'gzip compressed'; then
