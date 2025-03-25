@@ -204,7 +204,8 @@ rule modify_vcf:
         runtime=480,
     shell:
         r"""
-        if [ ! -s "{input.vcf}" ]; then
+        # if [ ! -s "{input.vcf}" ]; then
+        if [[ "{input.vcf}" == "empty.vcf" ]] || [ ! -s "{input.vcf}" ]; then
             # No VCF provided, create an empty one
             (
                 echo "##fileformat=VCFv4.2"; 
