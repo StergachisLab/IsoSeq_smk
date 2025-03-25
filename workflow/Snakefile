@@ -210,7 +210,7 @@ rule modify_vcf:
             # No VCF provided, create an empty one
             (
                 echo "##fileformat=VCFv4.2"; 
-                echo "#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT UnnamedSample"
+                echo -e "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tUnnamedSample"
             ) | bgzip -c > {output.mod_vcf} && tabix -p vcf {output.mod_vcf}
         else
             # Process the existing VCF
