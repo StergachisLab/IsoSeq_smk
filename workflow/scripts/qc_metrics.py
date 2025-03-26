@@ -18,7 +18,7 @@ def extract_qc_metrics(bam_file):
         gene_counts = {}
         transcript_counts = {}
         sb_counts = {}
-        st_counts = {}
+        sc_counts = {}
         hp_counts = {}
         mapq_scores = []
 
@@ -38,15 +38,15 @@ def extract_qc_metrics(bam_file):
             if transcript:
                 transcript_counts[transcript] = transcript_counts.get(transcript, 0) + 1
 
-            # Extract categorical tags (sb, st, HP)
+            # Extract categorical tags (sb, sc, HP)
             sb = read.get_tag("sb") if read.has_tag("sb") else None
-            st = read.get_tag("st") if read.has_tag("st") else None
+            sc = read.get_tag("sc") if read.has_tag("sc") else None
             hp = read.get_tag("HP") if read.has_tag("HP") else None
 
             if sb:
                 sb_counts[sb] = sb_counts.get(sb, 0) + 1
-            if st:
-                st_counts[st] = st_counts.get(st, 0) + 1
+            if sc:
+                sc_counts[sc] = sc_counts.get(sc, 0) + 1
             if hp:
                 hp_counts[hp] = hp_counts.get(hp, 0) + 1
 
@@ -70,7 +70,7 @@ def extract_qc_metrics(bam_file):
             gene_counts,
             transcript_counts,
             sb_counts,
-            st_counts,
+            sc_counts,
             hp_counts,
             mapq_scores,
         )
@@ -173,7 +173,7 @@ if __name__ == "__main__":
         gene_counts,
         transcript_counts,
         sb_counts,
-        st_counts,
+        sc_counts,
         hp_counts,
         mapq_scores,
     ) = extract_qc_metrics(bam_file)
@@ -213,7 +213,7 @@ if __name__ == "__main__":
             color="black",
         )
 
-    st_length_dict = {}
+    sc_length_dict = {}
     sb_length_dict = {}
 
     bam = pysam.AlignmentFile(bam_file, "rb")
@@ -221,20 +221,20 @@ if __name__ == "__main__":
         read_length = read.query_length
         if read_length is None:
             continue
-        if read.has_tag("st"):
-            st = read.get_tag("st")
-            st_length_dict.setdefault(st, []).append(read_length)
+        if read.has_tag("sc"):
+            sc = read.get_tag("sc")
+            sc_length_dict.setdefault(sc, []).append(read_length)
         if read.has_tag("sb"):
             sb = read.get_tag("sb")
             sb_length_dict.setdefault(sb, []).append(read_length)
     bam.close()
 
     plot_read_length_by_category(
-        st_length_dict,
-        "Structural Category (st)",
+        sc_length_dict,
+        "Structural Category (sc)",
         os.path.join(
             output_dir,
-            f"{os.path.basename(bam_file).replace('.bam', '_read_length_by_st.pdf')}",
+            f"{os.path.basename(bam_file).replace('.bam', '_read_length_by_sc.pdf')}",
         ),
     )
     plot_read_length_by_category(
@@ -246,16 +246,16 @@ if __name__ == "__main__":
         ),
     )
 
-    st_counts_df = pd.DataFrame(
+    sc_counts_df = pd.DataFrame(
         [
             {"structural_category": k, "read_count": len(v)}
-            for k, v in st_length_dict.items()
+            for k, v in sc_length_dict.items()
         ]
     )
-    st_counts_df.to_csv(
+    sc_counts_df.to_csv(
         os.path.join(
             output_dir,
-            f"{os.path.basename(bam_file).replace('.bam', '_st_counts.tsv')}",
+            f"{os.path.basename(bam_file).replace('.bam', '_sc_counts.tsv')}",
         ),
         sep="\t",
         index=False,
