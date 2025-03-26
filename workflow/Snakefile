@@ -190,30 +190,36 @@ rule modify_rg:
         samtools index {output.bam}
         """
 
+rule create_dummy_vcf:
+    conda:
+        "envs/env.yml"
+    output:
+        "mod_vcf/{individual}_empty.vcf.gz"
+    shell:
+        r"""
+        mkdir -p $(dirname {output})
+        (
+            echo "##fileformat=VCFv4.2"
+            printf "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tUnnamedSample\n"
+        ) | bgzip -c > {output}
+        """
 
 rule modify_vcf:
     conda:
         "envs/env.yml"
     input:
-        vcf=get_vcf_path,
+        vcf=get_vcf_path
     output:
         mod_vcf="mod_vcf/{individual}_mod.vcf.gz",
-        mod_vcf_tbi="mod_vcf/{individual}_mod.vcf.gz.tbi",
+        mod_vcf_tbi="mod_vcf/{individual}_mod.vcf.gz.tbi"
     threads: config.get("threads", 2)
-    resources:
-        runtime=480,
     shell:
         r"""
-        # if [ ! -s "{input.vcf}" ]; then
-        # if [[ "{input.vcf}" == "empty.vcf" ]] || [ ! -s "{input.vcf}" ]; then
-        if [[ "$(basename "{input.vcf}")" == "empty.vcf" ]] || [ ! -s "{input.vcf}" ]; then
-            # No VCF provided, create an empty one
-            (
-                echo "##fileformat=VCFv4.2"; 
-                printf "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tUnnamedSample\n"
-            ) | bgzip -c > {output.mod_vcf} && tabix -p vcf {output.mod_vcf}
+        if [[ "$(basename {input.vcf})" == *_empty.vcf.gz ]] || [ ! -s {input.vcf} ]; then
+            # No VCF provided, use dummy already created
+            cp {input.vcf} {output.mod_vcf}
+            tabix -p vcf {output.mod_vcf}
         else
-            # Process the existing VCF
             (zcat {input.vcf} 2>/dev/null || cat {input.vcf}) \
             | bcftools view \
             | awk 'BEGIN {{FS=OFS="\t"}} /^#CHROM/ {{$10="UnnamedSample"; print; next}} {{print}}' \
