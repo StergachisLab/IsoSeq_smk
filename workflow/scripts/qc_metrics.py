@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 def extract_qc_metrics(bam_file):
     """Extract QC metrics from a given FLNC BAM file."""
     try:
@@ -62,14 +63,34 @@ def extract_qc_metrics(bam_file):
             "Total_Unique_Transcripts": len(transcript_counts),
         }
 
-        return metrics, read_lengths, isoform_counts, gene_counts, transcript_counts, sb_counts, st_counts, hp_counts, mapq_scores
+        return (
+            metrics,
+            read_lengths,
+            isoform_counts,
+            gene_counts,
+            transcript_counts,
+            sb_counts,
+            st_counts,
+            hp_counts,
+            mapq_scores,
+        )
 
     except Exception as e:
         print(f"Error processing BAM file {bam_file}: {e}")
         sys.exit(1)
 
 
-def plot_histogram(data, xlabel, ylabel, title, output_file, bins=50, log_scale=False, percentiles=None, color="blue"):
+def plot_histogram(
+    data,
+    xlabel,
+    ylabel,
+    title,
+    output_file,
+    bins=50,
+    log_scale=False,
+    percentiles=None,
+    color="blue",
+):
     """Generate histograms and save as PDF."""
     plt.figure(figsize=(8, 5))
     sns.histplot(data, bins=bins, kde=True, color=color, label=xlabel)
@@ -77,12 +98,14 @@ def plot_histogram(data, xlabel, ylabel, title, output_file, bins=50, log_scale=
     if percentiles and len(data) > 0:
         for pct, col in percentiles.items():
             value = np.percentile(data, pct)
-            plt.axvline(value, color=col, linestyle="dashed", label=f"{pct}%: {value:.0f}")
+            plt.axvline(
+                value, color=col, linestyle="dashed", label=f"{pct}%: {value:.0f}"
+            )
 
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
-    plt.legend()  # Ensuring the legend has labels
+    plt.legend()
 
     if log_scale:
         plt.yscale("log")
@@ -91,7 +114,9 @@ def plot_histogram(data, xlabel, ylabel, title, output_file, bins=50, log_scale=
     plt.close()
 
 
-def plot_bar_chart(df, x_label, y_label, title, output_file, log_scale=False, color="blue"):
+def plot_bar_chart(
+    df, x_label, y_label, title, output_file, log_scale=False, color="blue"
+):
     """Generate bar charts and save as PDF."""
     plt.figure(figsize=(10, 5))
 
@@ -112,8 +137,22 @@ def plot_bar_chart(df, x_label, y_label, title, output_file, log_scale=False, co
     plt.close()
 
 
+def plot_read_length_by_category(length_dict, category_name, output_file):
+    """Generate overlapped KDE plots for read length by category."""
+    plt.figure(figsize=(10, 6))
+    for category, lengths in length_dict.items():
+        if len(lengths) > 1:
+            sns.kdeplot(lengths, label=category, fill=True, alpha=0.4)
+    plt.xlabel("Read Length")
+    plt.ylabel("Density")
+    plt.title(f"Read Length Distribution by {category_name}")
+    plt.legend(title=category_name)
+    plt.tight_layout()
+    plt.savefig(output_file, format="pdf")
+    plt.close()
+
+
 if __name__ == "__main__":
-    # Capture arguments
     if len(sys.argv) < 4:
         print("Usage: python qc_metrics.py <input_bam> <output_tsv> <output_plots_dir>")
         sys.exit(1)
@@ -127,90 +166,111 @@ if __name__ == "__main__":
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # Extract QC metrics
-    qc_metrics, read_lengths, isoform_counts, gene_counts, transcript_counts, sb_counts, st_counts, hp_counts, mapq_scores = extract_qc_metrics(bam_file)
+    (
+        qc_metrics,
+        read_lengths,
+        isoform_counts,
+        gene_counts,
+        transcript_counts,
+        sb_counts,
+        st_counts,
+        hp_counts,
+        mapq_scores,
+    ) = extract_qc_metrics(bam_file)
 
-    # Save QC summary as TSV (avoid empty files)
     qc_df = pd.DataFrame(qc_metrics.items(), columns=["Metric", "Value"])
     if qc_df.empty:
         print(f"Warning: No QC data for {bam_file}. Writing placeholder.")
         qc_df = pd.DataFrame({"Metric": ["No Data"], "Value": ["N/A"]})
-
     qc_df.to_csv(output_tsv, sep="\t", index=False)
 
-    # Compute percentiles for read length histogram
     percentiles = {10: "green", 50: "red", 90: "purple"}
 
-    # Generate and save plots
     if read_lengths:
-        plot_histogram(read_lengths, "FLNC Read Length", "Count", "FLNC Read Length Distribution",
-                       os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_read_length.pdf')}"),
-                       percentiles=percentiles, color="blue")
+        plot_histogram(
+            read_lengths,
+            "FLNC Read Length",
+            "Count",
+            "FLNC Read Length Distribution",
+            os.path.join(
+                output_dir,
+                f"{os.path.basename(bam_file).replace('.bam', '_read_length.pdf')}",
+            ),
+            percentiles=percentiles,
+            color="blue",
+        )
 
     if mapq_scores:
-        plot_histogram(mapq_scores, "MAPQ Score", "Count", "MAPQ Score Distribution",
-                       os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_mapq.pdf')}"),
-                       bins=30, color="black")
+        plot_histogram(
+            mapq_scores,
+            "MAPQ Score",
+            "Count",
+            "MAPQ Score Distribution",
+            os.path.join(
+                output_dir, f"{os.path.basename(bam_file).replace('.bam', '_mapq.pdf')}"
+            ),
+            bins=30,
+            color="black",
+        )
 
-def plot_read_length_by_category(length_dict, category_name, output_file):
-    """Generate overlapped KDE plots for read length by category."""
-    plt.figure(figsize=(10, 6))
-    for category, lengths in length_dict.items():
-        if len(lengths) > 1:  # Avoid plotting single-point KDE
-            sns.kdeplot(lengths, label=category, fill=True, alpha=0.4)
-    plt.xlabel("Read Length")
-    plt.ylabel("Density")
-    plt.title(f"Read Length Distribution by {category_name}")
-    plt.legend(title=category_name)
-    plt.tight_layout()
-    plt.savefig(output_file, format="pdf")
-    plt.close()
+    st_length_dict = {}
+    sb_length_dict = {}
 
-# Prepare dicts for st and sb category-based read lengths
-st_length_dict = {}
-sb_length_dict = {}
+    bam = pysam.AlignmentFile(bam_file, "rb")
+    for read in bam:
+        read_length = read.query_length
+        if read_length is None:
+            continue
+        if read.has_tag("st"):
+            st = read.get_tag("st")
+            st_length_dict.setdefault(st, []).append(read_length)
+        if read.has_tag("sb"):
+            sb = read.get_tag("sb")
+            sb_length_dict.setdefault(sb, []).append(read_length)
+    bam.close()
 
-# Re-open BAM to collect lengths by tag
-bam = pysam.AlignmentFile(bam_file, "rb")
-for read in bam:
-    read_length = read.query_length
-    if read_length is None:
-        continue
-    if read.has_tag("st"):
-        st = read.get_tag("st")
-        st_length_dict.setdefault(st, []).append(read_length)
-    if read.has_tag("sb"):
-        sb = read.get_tag("sb")
-        sb_length_dict.setdefault(sb, []).append(read_length)
-bam.close()
+    plot_read_length_by_category(
+        st_length_dict,
+        "Structural Category (st)",
+        os.path.join(
+            output_dir,
+            f"{os.path.basename(bam_file).replace('.bam', '_read_length_by_st.pdf')}",
+        ),
+    )
+    plot_read_length_by_category(
+        sb_length_dict,
+        "Subcategory (sb)",
+        os.path.join(
+            output_dir,
+            f"{os.path.basename(bam_file).replace('.bam', '_read_length_by_sb.pdf')}",
+        ),
+    )
 
-# Plot and save
-plot_read_length_by_category(
-    st_length_dict,
-    "Structural Category (st)",
-    os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_read_length_by_st.pdf')}")
-)
-plot_read_length_by_category(
-    sb_length_dict,
-    "Subcategory (sb)",
-    os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_read_length_by_sb.pdf')}")
-)
+    st_counts_df = pd.DataFrame(
+        [
+            {"structural_category": k, "read_count": len(v)}
+            for k, v in st_length_dict.items()
+        ]
+    )
+    st_counts_df.to_csv(
+        os.path.join(
+            output_dir,
+            f"{os.path.basename(bam_file).replace('.bam', '_st_counts.tsv')}",
+        ),
+        sep="\t",
+        index=False,
+    )
 
-# Save category counts to TSV
-st_counts_df = pd.DataFrame([
-    {"structural_category": k, "read_count": len(v)} for k, v in st_length_dict.items()
-])
-st_counts_df.to_csv(
-    os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_st_counts.tsv')}"),
-    sep="\t", index=False
-)
+    sb_counts_df = pd.DataFrame(
+        [{"subcategory": k, "read_count": len(v)} for k, v in sb_length_dict.items()]
+    )
+    sb_counts_df.to_csv(
+        os.path.join(
+            output_dir,
+            f"{os.path.basename(bam_file).replace('.bam', '_sb_counts.tsv')}",
+        ),
+        sep="\t",
+        index=False,
+    )
 
-sb_counts_df = pd.DataFrame([
-    {"subcategory": k, "read_count": len(v)} for k, v in sb_length_dict.items()
-])
-sb_counts_df.to_csv(
-    os.path.join(output_dir, f"{os.path.basename(bam_file).replace('.bam', '_sb_counts.tsv')}"),
-    sep="\t", index=False
-)
-
-        print(f"Finished processing {bam_file}")
+    print(f"Finished processing {bam_file}")

@@ -3,15 +3,18 @@
 import os
 import gzip
 
+
 # Check if "deepvariant_vcf" exists for an individual
 def has_vcf(wildcards):
     vcf_path = get_vcf_path(wildcards)
     return bool(vcf_path) and os.path.exists(vcf_path)
 
+
 # Get modified phased vcf file path
 def get_mod_phased_vcf(wildcards):
     phased_vcf = f"mod_vcf/{wildcards.individual}_mod.vcf.gz"
     return phased_vcf if os.path.exists(phased_vcf) else None
+
 
 # Get raw VCF path for an individual
 def get_vcf_path(wildcards):
@@ -32,6 +35,7 @@ def get_merge_input(wc):
         print(f"[WARNING] Skipping: {wc.individual} / {wc.condition} / {wc.label}")
         return []
 
+
 # Combine all aligned BAMs for an individual, if conditions/labels exist
 def combine_labels(wildcards):
     individual = wildcards.individual
@@ -43,6 +47,7 @@ def combine_labels(wildcards):
                 result.append(f"merged/{individual}_{condition}_{label}_labeled.bam")
     return result
 
+
 # Get all haplotag info files
 def get_haplotag_files(wildcards):
     files = []
@@ -50,8 +55,11 @@ def get_haplotag_files(wildcards):
         for condition in ["treated", "untreated"]:
             if condition in indiv_data and isinstance(indiv_data[condition], dict):
                 for label in indiv_data[condition]:
-                    files.append(f"whatshap/{individual}_{condition}_{label}.haplotagged.txt")
+                    files.append(
+                        f"whatshap/{individual}_{condition}_{label}.haplotagged.txt"
+                    )
     return files
+
 
 # Get whatshap outputs
 def whatshap_outs(wc):
@@ -60,5 +68,7 @@ def whatshap_outs(wc):
         for condition in ["treated", "untreated"]:
             if condition in indiv_data and isinstance(indiv_data[condition], dict):
                 for label in indiv_data[condition]:
-                    result.append(f"whatshap/{individual}_{condition}_{label}.tagged.bam")
+                    result.append(
+                        f"whatshap/{individual}_{condition}_{label}.tagged.bam"
+                    )
     return result
