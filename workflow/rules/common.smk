@@ -16,14 +16,11 @@ def get_mod_phased_vcf(wildcards):
 # Get raw VCF path for an individual
 def get_vcf_path(wildcards):
     individual = wildcards.individual
-    try:
-        vcf = config["individuals"].get(individual, {}).get("deepvariant_vcf", "")
-        if vcf and os.path.exists(vcf):
-            return vcf
-        else:
-            return f"mod_vcf/{individual}_empty.vcf.gz"
-    except Exception as e:
-        print(f"[WARNING] get_vcf_path failed for {individual}: {e}")
+    vcf = config["individuals"].get(individual, {}).get("deepvariant_vcf", "")
+    if vcf and os.path.exists(vcf):
+        return vcf
+    else:
+        # Make sure rule `create_dummy_vcf` has this as its output
         return f"mod_vcf/{individual}_empty.vcf.gz"
 
 
