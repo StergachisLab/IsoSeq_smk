@@ -397,6 +397,8 @@ rule collapse:
         """
 
 rule pigeon_prepare_annot:
+    conda:
+        "envs/env.yml"
     input:
         gtf=config["pigeon_annot"]
     output:
