@@ -10,7 +10,7 @@ In this pipeline, we also incorporate custom Iso-Seq tags into the aligned `flnc
 ```
 haplotype (HP:i:)
 isoform (in:Z:)
-structural_category (st:Z:)
+structural_category (sc:Z:)
 associated_gene (gn:Z:)
 associated_transcript (tn:Z:)
 subcategory (sb:Z:)
