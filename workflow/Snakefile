@@ -210,7 +210,7 @@ rule modify_vcf:
             # No VCF provided, create an empty one
             (
                 echo "##fileformat=VCFv4.2"; 
-                printf "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tUnnamedSample"
+                printf "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tUnnamedSample\n"
             ) | bgzip -c > {output.mod_vcf} && tabix -p vcf {output.mod_vcf}
         else
             # Process the existing VCF
@@ -402,18 +402,17 @@ rule pigeon_prepare_annot:
     input:
         gtf=config["pigeon_annot"]
     output:
-        gtf=prepared_gtf,
-        index=prepared_index
+        gtf = "annotations/annotations.sorted.gtf",
+        pgi = "annotations/annotations.sorted.gtf.pgi"
     shell:
         r"""
         if file {input.gtf} | grep -q 'gzip compressed'; then
-            gunzip -c {input.gtf} > temp_annotation.gtf
+            gunzip -c {input.gtf} > annotations/annotations.gtf
         else
-            cp {input.gtf} temp_annotation.gtf
+            cp {input.gtf} annotations/annotations.gtf
         fi
 
-        pigeon prepare temp_annotation.gtf --output {output.gtf}
-        rm temp_annotation.gtf
+        pigeon prepare annotations/annotations.gtf       
         """
 
 rule pigeon_process:
@@ -422,8 +421,8 @@ rule pigeon_process:
     input:
         collapsed_gff="collapse/collapsed.gff",
         collapsed_count="collapse/collapsed.flnc_count.txt",
-        prepared_gtf=prepared_gtf,
-        prepared_index=prepared_index
+        prepared_gtf="annotations/annotations.sorted.gtf",
+        prepared_index="annotations/annotations.sorted.gtf.pgi"
     output:
         sorted_gff="pigeon/sorted.gff",
         classification="pigeon/pigeon_classification.txt",
