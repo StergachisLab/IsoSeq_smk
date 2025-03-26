@@ -68,9 +68,3 @@ def whatshap_outs(wc):
                 for label in indiv_data[condition]:
                     result.append(f"whatshap/{individual}_{condition}_{label}.tagged.bam")
     return result
-
-
-base = os.path.basename(config["pigeon_annot"]).replace(".gtf.gz", "").replace(".gtf", "")
-prepared_gtf = f"annotations/{base}.sorted.gtf"
-prepared_index = f"{prepared_gtf}.pgi"
-
