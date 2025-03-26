@@ -213,4 +213,4 @@ sb_counts_df.to_csv(
     sep="\t", index=False
 )
 
-    print(f"Finished processing {bam_file}")
+        print(f"Finished processing {bam_file}")
