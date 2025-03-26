@@ -3,13 +3,6 @@
 import os
 import gzip
 
-dummy_vcf = "mod_vcf/empty.vcf.gz"
-os.makedirs(os.path.dirname(dummy_vcf), exist_ok=True)
-if not os.path.exists(dummy_vcf):
-    with gzip.open(dummy_vcf, "wt") as f:
-        f.write("##fileformat=VCFv4.2\n#CHROM POS ID REF ALT QUAL FILTER INFO FORMAT UnnamedSample\n")
-
-
 # Check if "deepvariant_vcf" exists for an individual
 def has_vcf(wildcards):
     vcf_path = get_vcf_path(wildcards)
@@ -22,12 +15,16 @@ def get_mod_phased_vcf(wildcards):
 
 # Get raw VCF path for an individual
 def get_vcf_path(wildcards):
+    individual = wildcards.individual
     try:
-        vcf = config["individuals"].get(wildcards.individual, {}).get("deepvariant_vcf", "")
-        return vcf if vcf and os.path.exists(vcf) else "mod_vcf/empty.vcf.gz"
+        vcf = config["individuals"].get(individual, {}).get("deepvariant_vcf", "")
+        if vcf and os.path.exists(vcf):
+            return vcf
+        else:
+            return f"mod_vcf/{individual}_empty.vcf.gz"
     except Exception as e:
-        print(f"[WARNING] get_vcf_path failed for {wildcards.individual}: {e}")
-        return "mod_vcf/empty.vcf.gz"
+        print(f"[WARNING] get_vcf_path failed for {individual}: {e}")
+        return f"mod_vcf/{individual}_empty.vcf.gz"
 
 
 # Get input files for merging per label (safe)
