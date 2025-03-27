@@ -26,7 +26,6 @@ jobs:
           conda install -c bioconda -c conda-forge snakemake
 
       - name: Run Snakemake dry-run using test config
-        working-directory: IsoSeq_smk
         shell: bash -l {0}
         run: |
           snakemake -n \
@@ -35,7 +34,6 @@ jobs:
             --cores 1
 
       - name: Run Snakemake full test
-        working-directory: IsoSeq_smk
         shell: bash -l {0}
         run: |
           snakemake \
