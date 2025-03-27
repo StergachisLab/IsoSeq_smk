@@ -5,16 +5,6 @@ import glob
 # Load config file
 configfile: os.environ.get("SNAKEMAKE_CONFIG", None)
 
-if not config_path:
-    for i, arg in enumerate(sys.argv):
-        if arg == "--configfile" and i + 1 < len(sys.argv):
-            config_path = sys.argv[i + 1]
-            break
-
-if not config_path:
-    sys.stderr.write("❌ ERROR: You must provide a config file with --configfile.\n")
-    sys.exit(1)
-
 # List of all individuals from the configuration file
 individuals = config["individuals"].keys()
 
