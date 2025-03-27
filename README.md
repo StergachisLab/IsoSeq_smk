@@ -1,3 +1,8 @@
+![GitHub all releases](https://img.shields.io/github/StergachisLab/IsoSeq_smk/total)
+![GitHub last commit](https://img.shields.io/github/StergachisLab/IsoSeq_smk)
+![GitHub license](https://img.shields.io/github/license/StergachisLab/IsoSeq_smk)
+
+
 # MAS-Seq processing pipeline
 
 This is a pipeline designed to process [MAS-Seq data from PacBio](https://isoseq.how/). In particular, this pipeline helps with the following steps: clustering, alignment, merging, collapsing and annotating with pigeon, as well as the inclusion of annotations back to the refined `flnc.bam` files. The pipeline allows to combine different samples (PS0001, PS0002) within a condition (treated/untreated) per individual.
