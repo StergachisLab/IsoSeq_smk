@@ -1,4 +1,3 @@
-![Build Status](https://github.com/StergachisLab/IsoSeq_smk/actions/workflows/main.yml/badge.svg)
 ![Downloads](https://img.shields.io/github/downloads/StergachisLab/IsoSeq_smk/total)
 ![Last Commit](https://img.shields.io/github/last-commit/StergachisLab/IsoSeq_smk)
 ![License](https://img.shields.io/github/license/StergachisLab/IsoSeq_smk)
