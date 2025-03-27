@@ -2,6 +2,10 @@
 ![Downloads](https://img.shields.io/github/downloads/StergachisLab/IsoSeq_smk/total)
 ![Last Commit](https://img.shields.io/github/last-commit/StergachisLab/IsoSeq_smk)
 ![License](https://img.shields.io/github/license/StergachisLab/IsoSeq_smk)
+![Snakemake](https://img.shields.io/badge/snakemake-compatible-brightgreen.svg?logo=snakemake&logoColor=white)
+![Conda](https://img.shields.io/badge/conda-envs-green?logo=anaconda)
+![Reproducible](https://img.shields.io/badge/reproducible-yes-brightgreen.svg)
+![language](https://img.shields.io/github/languages/top/StergachisLab/IsoSeq_smk)
 
 
 # MAS-Seq processing pipeline
