@@ -42,9 +42,9 @@ for ind in individuals:
                 })
 
 # Debug: show combinations being processed
-print("Valid combinations to be processed:")
-for comb in combinations:
-    print(f"{comb['individual']} - {comb['condition']} - {comb['label']}")
+# print("Valid combinations to be processed:")
+# for comb in combinations:
+#    print(f"{comb['individual']} - {comb['condition']} - {comb['label']}")
 
 # Restrict the values wildcards can take
 wildcard_constraints:
