@@ -1,6 +1,6 @@
 ![GitHub all releases](https://img.shields.io/github/StergachisLab/IsoSeq_smk/total)
-![GitHub last commit](https://img.shields.io/github/StergachisLab/IsoSeq_smk)
-![GitHub license](https://img.shields.io/github/license/StergachisLab/IsoSeq_smk)
+![GitHub last commit](https://img.shields.io/github/StergachisLab/IsoSeq_smk/)
+![GitHub license](https://img.shields.io/github/license/StergachisLab/IsoSeq_smk/)
 
 
 # MAS-Seq processing pipeline
