@@ -29,14 +29,14 @@ jobs:
         shell: bash -l {0}
         run: |
           snakemake -n \
-            --snakefile IsoSeq_smk/workflow/Snakefile \
-            --configfile IsoSeq_smk/config/github.config.yaml \
+            --snakefile workflow/Snakefile \
+            --configfile config/github.config.yaml \
             --cores 1
 
       - name: Run Snakemake full test
         shell: bash -l {0}
         run: |
           snakemake \
-            --snakefile IsoSeq_smk/workflow/Snakefile \
-            --configfile IsoSeq_smk/config/github.config.yaml \
+            --snakefile workflow/Snakefile \
+            --configfile config/github.config.yaml \
             --cores 1
