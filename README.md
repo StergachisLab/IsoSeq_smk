@@ -45,7 +45,7 @@ You will need snakemake and the snakemake executor plugin to distribute jobs on 
 
 # 2) Activate the conda environment
 conda activate snakemake_env
-
+conda config --set solver classic
 ```
 
 ## Testing
