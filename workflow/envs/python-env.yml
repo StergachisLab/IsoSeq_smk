@@ -1,7 +1,8 @@
 name: python-env
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
+  - defaults
 dependencies:
   - python=3.9
   - pandas
