@@ -33,10 +33,3 @@ jobs:
             --configfile config/github.config.yaml \
             --cores 1 --omit-from isoranker_analysis
 
-      - name: Run Snakemake full test
-        shell: bash -l {0}
-        run: |
-          snakemake \
-            --snakefile workflow/Snakefile \
-            --configfile config/github.config.yaml \
-            --cores 1 --omit-from isoranker_analysis
