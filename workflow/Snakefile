@@ -551,5 +551,5 @@ rule isoranker_analysis:
           --classification_path {input.classification} \
           --genemap_path {input.genemap} \
           --hpo_file_path {input.hpo_file} \
-          --probands_file_path {input.probands_file}
+          --probands_file_path {input.probands_file} --final_output_dir Output
         """
