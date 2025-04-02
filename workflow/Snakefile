@@ -181,6 +181,8 @@ rule modify_rg:
         bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
         bai="aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai",
     threads: config.get("threads", 4)
+    benchmark:
+        "benchmark/modify_rg/{individual}_{condition}_{label}_rg.txt"
     resources:
         runtime=480,
     shell:
@@ -213,6 +215,8 @@ rule modify_vcf:
         mod_vcf="mod_vcf/{individual}_mod.vcf.gz",
         mod_vcf_tbi="mod_vcf/{individual}_mod.vcf.gz.tbi"
     threads: config.get("threads", 2)
+    benchmark:
+        "benchmark/modify_vcf/{individual}_mod_vcf.txt"
     shell:
         r"""
         if [[ "$(basename {input.vcf})" == *_empty.vcf.gz ]] || [ ! -s {input.vcf} ]; then
@@ -244,6 +248,8 @@ rule whatshap_haplotag:
         list_txt="whatshap/{individual}_{condition}_{label}.list.txt",
     params:
         script=workflow.source_path("scripts/add_hp0.sh"),
+    benchmark:
+        "benchmark/whatshap/{individual}_{condition}_{label}_haplotag.txt"
     shell:
         """
         if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then
@@ -346,6 +352,8 @@ rule label_transcripts:
     output:
         bam="aligned/{individual}_aligned_labeled.bam",
     threads: config.get("threads", 4)
+    benchmark:
+        "benchmark/label_transcripts/{individual}_aligned_labeled.txt"
     resources:
         runtime=480,
         mem_mb=80000,
@@ -410,6 +418,8 @@ rule pigeon_prepare_annot:
     output:
         gtf = "annotations/annotations.sorted.gtf",
         pgi = "annotations/annotations.sorted.gtf.pgi"
+    benchmark:
+        "benchmark/pigeon_prepare/annotation_sort.txt"
     shell:
         r"""
         if file {input.gtf} | grep -q 'gzip compressed'; then
@@ -508,6 +518,8 @@ rule qc_flnc:
     params:
         output_dir="qc/{individual}_{condition}_{label}_plots",
         script=workflow.source_path("scripts/qc_metrics.py"),
+    benchmark:
+        "benchmark/qc_flnc/{individual}_{condition}_{label}_qc.txt"
     shell:
         """
         python {params.script} {input.bam} {output.tsv} {params.output_dir}
