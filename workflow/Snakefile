@@ -525,6 +525,7 @@ rule qc_flnc:
         python {params.script} {input.bam} {output.tsv} {params.output_dir}
         """
 
+docs_dir = config["docs_dir"]
 
 rule isoranker_analysis:
     input:
