@@ -320,7 +320,7 @@ rule cluster:
         "benchmark/cluster/{individual}_all_conditions.txt"
     shell:
         """
-        isoseq3 cluster {input.bam} {output.clustered} --verbose -j {threads} --singletons
+        isoseq cluster2 {input.bam} {output.clustered} --verbose -j {threads} --singletons
         """
 
 
@@ -407,7 +407,7 @@ rule collapse:
         "benchmark/collapse/collapse.txt"
     shell:
         """
-        isoseq3 collapse --num-threads {threads} {input} {output.collapsed_gff}
+        isoseq collapse --num-threads {threads} {input} {output.collapsed_gff}
         """
 
 rule pigeon_prepare_annot:
