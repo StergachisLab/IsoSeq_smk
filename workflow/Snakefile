@@ -345,7 +345,7 @@ rule cluster:
         "benchmark/cluster/{individual}_all_conditions.txt"
     shell:
         """
-        isoseq cluster2 {input.bam} {output.clustered} --verbose -j {threads} --singletons
+        isoseq cluster2 {input.bam} {output.clustered} -j {threads} --singletons
         """
 
 
