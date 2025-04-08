@@ -3,7 +3,7 @@ import yaml
 import glob
 
 # Load config file
-# configfile: os.environ.get("SNAKEMAKE_CONFIG", None)
+configfile: os.environ.get("SNAKEMAKE_CONFIG", "config/github.config.yaml")
 
 # List of all individuals from the configuration file
 individuals = config["individuals"].keys()
