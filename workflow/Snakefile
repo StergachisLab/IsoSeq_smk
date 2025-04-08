@@ -88,6 +88,8 @@ rule merge_individual_condition:
         "envs/env.yml"
     input:
         get_merge_input,
+    log:
+        "logs/merge_individual_condition/{individual}_{condition}_{label}_merged.log"
     output:
         bam="merged/{individual}_{condition}_{label}_merged.bam",
     threads: config.get("threads", 4)
@@ -139,6 +141,8 @@ rule label_reads_with_condition:
         bam="merged/{individual}_{condition}_{label}_merged.bam",
     output:
         bam="merged/{individual}_{condition}_{label}_labeled.bam",
+    log:
+        "logs/label_reads_with_condition/{individual}_{condition}_{label}_labeled.log"
     benchmark:
         "benchmark/label_reads_condition/{individual}_{condition}_{label}.txt"
     threads: config.get("threads", 4)
@@ -159,6 +163,8 @@ rule align_sample:
         bam="merged/{individual}_{condition}_{label}_labeled.bam",
     output:
         aligned="aligned/{individual}_{condition}_{label}_aligned.bam",
+    log:
+        "logs/align_sample/{individual}_{condition}_{label}_aligned.log"
     threads: config.get("threads", 4)
     resources:
         runtime=480,
@@ -180,6 +186,8 @@ rule modify_rg:
     output:
         bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
         bai="aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai",
+    log:
+        "logs/modify_rg/{individual}_{condition}_{label}_mod_aligned.log"
     threads: config.get("threads", 4)
     benchmark:
         "benchmark/modify_rg/{individual}_{condition}_{label}_rg.txt"
@@ -197,6 +205,8 @@ rule create_dummy_vcf:
         "envs/env.yml"
     output:
         "mod_vcf/{individual}_empty.vcf.gz"
+    log:
+        "logs/create_dummy_vcf/{individual}_empty.log"
     shell:
         r"""
         mkdir -p $(dirname {output})
@@ -214,6 +224,8 @@ rule modify_vcf:
     output:
         mod_vcf="mod_vcf/{individual}_mod.vcf.gz",
         mod_vcf_tbi="mod_vcf/{individual}_mod.vcf.gz.tbi"
+    log:
+        "logs/modify_vcf/{individual}_mod_vcf.log"
     threads: config.get("threads", 2)
     benchmark:
         "benchmark/modify_vcf/{individual}_mod_vcf.txt"
@@ -246,6 +258,8 @@ rule whatshap_haplotag:
     output:
         haplotagged_bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
         list_txt="whatshap/{individual}_{condition}_{label}.list.txt",
+    log:
+        "logs/whatshap_haplotag/{individual}_{condition}_{label}.haplotag.log"
     params:
         script=workflow.source_path("scripts/add_hp0.sh"),
     benchmark:
@@ -272,6 +286,8 @@ rule extract_read_info:
         bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
     output:
         txt="whatshap/{individual}_{condition}_{label}.haplotagged.txt",
+    log:
+        "logs/extract_read_info/{individual}_{condition}_{label}.haplotag.log"
     benchmark:
         "benchmark/extract_read_info/{individual}_{condition}_{label}.txt"
     resources:
@@ -292,11 +308,13 @@ rule merge_samples:
     output:
         bam="merged/{individual}_all_conditions_merged.bam",
         bai="merged/{individual}_all_conditions_merged.bam.bai",
+    log:
+        "logs/merge_samples/{individual}_conditions_merged.log"
     threads: config.get("threads", 4)
     resources:
         runtime=480,
     benchmark:
-        "benchmark/merge_samples/{individual}_all_conditions.txt"
+        "benchmark/merge_samples/{individual}_all_conditions_merged.txt"
     shell:
         """
         samtools merge -@ {threads} {output.bam} {input.bam}
@@ -310,6 +328,8 @@ rule cluster:
     input:
         bam="merged/{individual}_all_conditions_merged.bam",
         bai="merged/{individual}_all_conditions_merged.bam.bai",
+    log:
+        "logs/cluster/{individual}_all_conditions_merged.log"
     output:
         clustered="clustered/{individual}_clustered.bam",
     threads: 20
@@ -331,6 +351,8 @@ rule align:
         "clustered/{individual}_clustered.bam",
     output:
         aligned="aligned/{individual}_aligned.bam",
+    log:
+        "logs/align/{individual}_aligned.log"
     threads: config.get("threads", 4)
     resources:
         runtime=480,
@@ -351,6 +373,8 @@ rule label_transcripts:
         bam="aligned/{individual}_aligned.bam",
     output:
         bam="aligned/{individual}_aligned_labeled.bam",
+    log:
+        "logs/label_transcripts/{individual}_aligned_labeled.log"
     threads: config.get("threads", 4)
     benchmark:
         "benchmark/label_transcripts/{individual}_aligned_labeled.txt"
@@ -376,6 +400,8 @@ rule merge_all_aligned:
         ),
     output:
         "aligned/all_individuals_aligned_merged.bam",
+    log:
+        "logs/merge_all_aligned/all_individuals_aligned_merged.log"
     threads: config.get("threads", 4)
     resources:
         runtime=480,
@@ -399,6 +425,8 @@ rule collapse:
         collapsed_abundance="collapse/collapsed.abundance.txt",
         collapsed_readstat="collapse/collapsed.read_stat.txt",
         collapsed_count="collapse/collapsed.flnc_count.txt",
+    log:
+        "logs/collapse/collapsed.log"
     threads: config.get("threads", 4)
     resources:
         runtime=480,
@@ -418,6 +446,8 @@ rule pigeon_prepare_annot:
     output:
         gtf = "annotations/annotations.sorted.gtf",
         pgi = "annotations/annotations.sorted.gtf.pgi"
+    log:
+        "logs/pigeon_prepare_annot/pigeon_prepare.log"
     benchmark:
         "benchmark/pigeon_prepare/annotation_sort.txt"
     shell:
@@ -443,6 +473,8 @@ rule pigeon_process:
         sorted_gff="pigeon/sorted.gff",
         classification="pigeon/pigeon_classification.txt",
         report="pigeon/saturation.txt"
+    log:
+        "logs/pigeon_process/pigeon_process.log"
     params:
         reference=config["reference_genome"]
     benchmark:
@@ -470,6 +502,8 @@ rule create_dictionary:
         classification="pigeon/pigeon_classification.txt",
     output:
         "tag/dictionary.tsv.gz",
+    log:
+        "logs/create_dictionary/dictionary.log"
     benchmark:
         "benchmark/create_dictionary/dictionary.txt"
     threads: config.get("threads", 4)
@@ -493,6 +527,8 @@ rule add_tags_to_bam:
     output:
         bam="tag/{individual}_{condition}_{label}.tagged.bam",
         bai="tag/{individual}_{condition}_{label}.tagged.bam.bai",
+    log:
+        "logs/add_tags_to_bam/{individual}_{condition}_{label}.tagged.log"
     benchmark:
         "benchmark/add_tags_to_bam/{individual}_{condition}_{label}_tagged.txt"
     threads: config.get("threads", 8)
@@ -515,6 +551,8 @@ rule qc_flnc:
     output:
         tsv="qc/{individual}_{condition}_{label}_qc_summary.tsv",
         plots_dir=directory("qc/{individual}_{condition}_{label}_plots"),
+    log:
+        "logs/qc_flnc/{individual}_{condition}_{label}.qc.log"
     params:
         output_dir="qc/{individual}_{condition}_{label}_plots",
         script=workflow.source_path("scripts/qc_metrics.py"),
@@ -546,6 +584,8 @@ rule isoranker_analysis:
         "Output/qc/isoform_diversity.tsv.gz",
         "Output/qc/pca_plot.pdf",
     threads: config.get("threads", 4)
+    log:
+        "logs/isoranker_analysis/isoranker.log"
     resources:
         runtime=480,
         mem_mb=500000,
