@@ -1,0 +1,7 @@
+# workflow/catalog_metadata.yaml
+documentation_url: https://github.com/StergachisLab/IsoSeq_smk
+topics:
+  - transcriptomics
+  - long-read
+  - isoseq
+  - pacbio
