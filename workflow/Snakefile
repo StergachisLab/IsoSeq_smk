@@ -95,14 +95,17 @@ rule merge_individual_condition:
     threads: config.get("threads", 4)
     resources:
         runtime=480,
+    params:
+        max_reads=config["max_reads"],
+        downsample_reads=config["downsample_reads"]
     benchmark:
         "benchmark/merge_individual_condition/{individual}_{condition}_{label}.txt"
     shell:
         r"""
         set -euo pipefail
 
-        max_reads={config[max_reads]}
-        downsample_reads={config[downsample_reads]}
+        max_reads={params.max_reads}
+        downsample_reads={params.downsample_reads}
 
         input_files=({input})
         num_files=${{#input_files[@]}}
@@ -169,11 +172,13 @@ rule align_sample:
     resources:
         runtime=480,
         mem_mb=130000,
+    params:
+        reference=config["reference_genome"],
     benchmark:
         "benchmark/align_samples/{individual}_{condition}_{label}.txt"
     shell:
         """
-        pbmm2 align {config[reference_genome]} {input.bam} {output.aligned} \
+        pbmm2 align {params.reference} {input.bam} {output.aligned} \
             --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
         """
 
@@ -357,11 +362,13 @@ rule align:
     resources:
         runtime=480,
         mem_mb=130000,
+    params:
+        reference=config["reference_genome"],
     benchmark:
         "benchmark/align/{individual}_aligned.txt"
     shell:
         """
-        pbmm2 align {config[reference_genome]} {input} {output.aligned} \
+        pbmm2 align {params.reference} {input} {output.aligned} \
             --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
         """
 
