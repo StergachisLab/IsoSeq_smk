@@ -1,0 +1,13 @@
+# workflow/meta.yaml
+name: IsoSeq_smk
+description: |
+  A Snakemake workflow for processing PacBio Iso-Seq data through collapse, classification, alignment, and quantification.
+authors:
+  - name: Adriana Sedeno Cortes
+    github: adrisede
+    orcid: 0000-0001-7959-8970
+keywords:
+  - isoseq
+  - pacbio
+  - long-read
+  - transcriptomics
