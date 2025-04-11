@@ -527,7 +527,7 @@ rule create_dictionary:
         script=workflow.source_path("scripts/create_dictionary.R"),
     shell:
         """
-        Rscript {params.script} {input.collapsed} whatshap/ {input.classification} {threads} tag
+        Rscript {params.script} {input.collapsed} whatshap/ {input.classification} {threads} tag > {log} 2>&1
         """
 
 
