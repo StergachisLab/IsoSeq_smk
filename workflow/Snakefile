@@ -4,6 +4,8 @@ import glob
 
 # Load config file
 configfile: os.environ.get("SNAKEMAKE_CONFIG", "config/github.config.yaml")
+run_isoranker = config.get("run_isoranker", False)
+
 
 # List of all individuals from the configuration file
 individuals = config["individuals"].keys()
@@ -85,7 +87,7 @@ rule all:
         *(["tag/dictionary.tsv.gz"] if combinations else []),
         *(["pigeon/sorted.gff"] if combinations else []),
         *(["pigeon/pigeon_classification.txt"] if combinations else []),
-        *(isoranker_outputs if combinations else [])
+        *(isoranker_outputs if run_isoranker else [])
 
 rule merge_individual_condition:
     conda:
