@@ -64,24 +64,28 @@ combinations_dict = {
     "label": [c["label"] for c in combinations],
 }
 
+isoranker_outputs = [
+    f"{output_dir}/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz",
+    f"{output_dir}/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz",
+    f"{output_dir}/browser/lookup_tables/gene_coverage_lookup_table.tsv.gz",
+    f"{output_dir}/browser/lookup_tables/sample_gene_rankings_lookup_table.tsv.gz",
+    f"{output_dir}/intermediate/merged_ranked_gene.tsv.gz",
+    f"{output_dir}/intermediate/merged_ranked_isoform.tsv.gz",
+    f"{output_dir}/qc/gene_diversity.tsv.gz",
+    f"{output_dir}/qc/isoform_diversity.tsv.gz",
+    f"{output_dir}/qc/pca_plot.pdf",
+]
+
 rule all:
     input:
         expand("tag/{individual}_{condition}_{label}.tagged.bam", zip, **combinations_dict),
         expand("qc/{individual}_{condition}_{label}_qc_summary.tsv", zip, **combinations_dict),
         expand("qc/{individual}_{condition}_{label}_plots", zip, **combinations_dict),
-        "collapse/collapsed.gff" if combinations else [],
-        "tag/dictionary.tsv.gz" if combinations else [],
-        "pigeon/sorted.gff" if combinations else [],
-        "pigeon/pigeon_classification.txt" if combinations else [],
-        "Output/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz" if combinations else [],
-        "Output/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz" if combinations else [],
-        "Output/browser/lookup_tables/gene_coverage_lookup_table.tsv.gz" if combinations else [],
-        "Output/browser/lookup_tables/sample_gene_rankings_lookup_table.tsv.gz" if combinations else [],
-        "Output/intermediate/merged_ranked_gene.tsv.gz" if combinations else [],
-        "Output/intermediate/merged_ranked_isoform.tsv.gz" if combinations else [],
-        "Output/qc/gene_diversity.tsv.gz" if combinations else [],
-        "Output/qc/isoform_diversity.tsv.gz" if combinations else [],
-        "Output/qc/pca_plot.pdf" if combinations else []
+        *(["collapse/collapsed.gff"] if combinations else []),
+        *(["tag/dictionary.tsv.gz"] if combinations else []),
+        *(["pigeon/sorted.gff"] if combinations else []),
+        *(["pigeon/pigeon_classification.txt"] if combinations else []),
+        *(isoranker_outputs if combinations else [])
 
 rule merge_individual_condition:
     conda:
@@ -571,6 +575,8 @@ rule qc_flnc:
         """
 
 docs_dir = config["docs_dir"]
+reference_genome = config["reference_genome"]
+output_dir = config.get("output_dir", "Output") 
 
 rule isoranker_analysis:
     input:
@@ -581,35 +587,37 @@ rule isoranker_analysis:
         hpo_file=os.path.join(docs_dir, "phenotype.hpoa"),
         probands_file=os.path.join(docs_dir, "Multiome_samples_clinical_findings_2.11.25.tsv"),
     output:
-        "Output/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz",
-        "Output/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz",
-        "Output/browser/lookup_tables/gene_coverage_lookup_table.tsv.gz",
-        "Output/browser/lookup_tables/sample_gene_rankings_lookup_table.tsv.gz",
-        "Output/intermediate/merged_ranked_gene.tsv.gz",
-        "Output/intermediate/merged_ranked_isoform.tsv.gz",
-        "Output/qc/gene_diversity.tsv.gz",
-        "Output/qc/isoform_diversity.tsv.gz",
-        "Output/qc/pca_plot.pdf",
+        gene_with_phenotype=f"{output_dir}/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz",
+        isoform_with_phenotype=f"{output_dir}/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz",
+        gene_lookup=f"{output_dir}/browser/lookup_tables/gene_coverage_lookup_table.tsv.gz",
+        ranking_lookup=f"{output_dir}/browser/lookup_tables/sample_gene_rankings_lookup_table.tsv.gz",
+        merged_gene=f"{output_dir}/intermediate/merged_ranked_gene.tsv.gz",
+        merged_isoform=f"{output_dir}/intermediate/merged_ranked_isoform.tsv.gz",
+        gene_div=f"{output_dir}/qc/gene_diversity.tsv.gz",
+        isoform_div=f"{output_dir}/qc/isoform_diversity.tsv.gz",
+        pca_plot=f"{output_dir}/qc/pca_plot.pdf",
     threads: config.get("threads", 4)
     log:
-        "logs/isoranker_analysis/isoranker.log"
+        f"logs/isoranker_analysis/isoranker.log"
     resources:
         runtime=480,
         mem_mb=500000,
     benchmark:
-        "benchmark/isoranker.txt"
+        f"benchmark/isoranker.txt"
     params:
-        output_dir="Output/",
+        output_dir=lambda wildcards, output: os.path.commonpath(list(output.values())),
+        ref_fa=reference_genome
     conda:
         "envs/isoranker.yml"
     shell:
         """
         isoranker_pb_run_analysis \
           --read_stat_path {input.read_stat} \
-          --reference_fasta_path {config[reference_genome]} \
+          --reference_fasta_path {params.ref_fa} \
           --sample_info_path {input.sample_info} \
           --classification_path {input.classification} \
           --genemap_path {input.genemap} \
           --hpo_file_path {input.hpo_file} \
-          --probands_file_path {input.probands_file} --final_output_dir Output
+          --probands_file_path {input.probands_file} \
+          --final_output_dir {params.output_dir}
         """
