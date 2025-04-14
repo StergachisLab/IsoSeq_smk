@@ -6,6 +6,7 @@
 ![Conda](https://img.shields.io/badge/conda-envs-green?logo=anaconda)
 ![Reproducible](https://img.shields.io/badge/reproducible-yes-brightgreen.svg)
 ![language](https://img.shields.io/github/languages/top/StergachisLab/IsoSeq_smk)
+![Lint & Format](https://github.com/StergachisLab/IsoSeq_smk/actions/workflows/main.yml/badge.svg)
 
 
 # MAS-Seq processing pipeline
