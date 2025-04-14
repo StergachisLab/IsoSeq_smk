@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """extract_read_info.py: Extract read quality, read length, and haplotype
-from haplotagged bam file.
+from haplotagged BAM file.
 """
 __author__ = "Adriana Sedeno"
 
@@ -10,10 +10,8 @@ import pysam
 
 def process_bam(bam_file, output_file):
     bam = pysam.AlignmentFile(bam_file, "rb")
-
     with open(output_file, "w") as out:
         out.write("ReadName\tReadQuality\tReadLength\tHaplotype\n")
-
         for read in bam:
             rq = read.get_tag("rq") if read.has_tag("rq") else "NA"
             read_length = len(read.query_sequence)
@@ -21,7 +19,6 @@ def process_bam(bam_file, output_file):
             out.write(
                 f"{read.query_name}\t{rq}\t{read_length}\t{hp}\n"
             )
-
     bam.close()
     print(f"Output written to {output_file}")
 
