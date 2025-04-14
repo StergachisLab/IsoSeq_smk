@@ -1,7 +1,7 @@
 name: isoranker
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
 dependencies:
   - python
   - numpy
@@ -16,4 +16,4 @@ dependencies:
   - pip
   - pip:
       - pyhpo
-      - git+https://github.com/yhhc2/IsoRanker.git
+      - git+https://github.com/StergachisLab/IsoRanker.git

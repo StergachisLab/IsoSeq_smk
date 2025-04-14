@@ -2,10 +2,13 @@ import os
 import yaml
 import glob
 
+
 # Load config file
 configfile: os.environ.get("SNAKEMAKE_CONFIG", "config/github.config.yaml")
-run_isoranker = config.get("run_isoranker", False)
 
+
+run_isoranker = config.get("run_isoranker", False)
+output_dir = config.get("output_dir", "Output")
 
 # List of all individuals from the configuration file
 individuals = config["individuals"].keys()
@@ -13,7 +16,8 @@ individuals = config["individuals"].keys()
 # Get existing conditions per individual (skip missing ones or empty dicts)
 conditions_per_individual = {
     ind: [
-        cond for cond in ["treated", "untreated"]
+        cond
+        for cond in ["treated", "untreated"]
         if cond in config["individuals"][ind]
         and isinstance(config["individuals"][ind][cond], dict)
         and len(config["individuals"][ind][cond]) > 0
@@ -37,28 +41,38 @@ for ind in individuals:
         for lbl in labels[ind][cond]:
             files = config["individuals"][ind][cond][lbl]
             if isinstance(files, list) and len(files) > 0:
-                combinations.append({
-                    "individual": ind,
-                    "condition": cond,
-                    "label": lbl
-                })
+                combinations.append(
+                    {"individual": ind, "condition": cond, "label": lbl}
+                )
 
 # Debug: show combinations being processed
 # print("Valid combinations to be processed:")
 # for comb in combinations:
 #    print(f"{comb['individual']} - {comb['condition']} - {comb['label']}")
 
+
 # Restrict the values wildcards can take
 wildcard_constraints:
     individual="|".join(individuals),
     condition="|".join(
-        sorted(set(cond for conds in conditions_per_individual.values() for cond in conds))
+        sorted(
+            set(cond for conds in conditions_per_individual.values() for cond in conds)
+        )
     ),
     label="|".join(
-        sorted(set(lbl for ind in individuals for cond in conditions_per_individual[ind] for lbl in labels[ind][cond]))
-    )
+        sorted(
+            set(
+                lbl
+                for ind in individuals
+                for cond in conditions_per_individual[ind]
+                for lbl in labels[ind][cond]
+            )
+        )
+    ),
+
 
 include: "rules/common.smk"
+
 
 combinations_dict = {
     "individual": [c["individual"] for c in combinations],
@@ -78,16 +92,24 @@ isoranker_outputs = [
     f"{output_dir}/qc/pca_plot.pdf",
 ]
 
+
 rule all:
     input:
-        expand("tag/{individual}_{condition}_{label}.tagged.bam", zip, **combinations_dict),
-        expand("qc/{individual}_{condition}_{label}_qc_summary.tsv", zip, **combinations_dict),
+        expand(
+            "tag/{individual}_{condition}_{label}.tagged.bam", zip, **combinations_dict
+        ),
+        expand(
+            "qc/{individual}_{condition}_{label}_qc_summary.tsv",
+            zip,
+            **combinations_dict,
+        ),
         expand("qc/{individual}_{condition}_{label}_plots", zip, **combinations_dict),
         *(["collapse/collapsed.gff"] if combinations else []),
         *(["tag/dictionary.tsv.gz"] if combinations else []),
         *(["pigeon/sorted.gff"] if combinations else []),
         *(["pigeon/pigeon_classification.txt"] if combinations else []),
-        *(isoranker_outputs if run_isoranker else [])
+        *(isoranker_outputs if run_isoranker else []),
+
 
 rule merge_individual_condition:
     conda:
@@ -95,7 +117,7 @@ rule merge_individual_condition:
     input:
         get_merge_input,
     log:
-        "logs/merge_individual_condition/{individual}_{condition}_{label}_merged.log"
+        "logs/merge_individual_condition/{individual}_{condition}_{label}_merged.log",
     output:
         bam="merged/{individual}_{condition}_{label}_merged.bam",
     threads: config.get("threads", 4)
@@ -103,7 +125,7 @@ rule merge_individual_condition:
         runtime=480,
     params:
         max_reads=config["max_reads"],
-        downsample_reads=config["downsample_reads"]
+        downsample_reads=config["downsample_reads"],
     benchmark:
         "benchmark/merge_individual_condition/{individual}_{condition}_{label}.txt"
     shell:
@@ -151,7 +173,7 @@ rule label_reads_with_condition:
     output:
         bam="merged/{individual}_{condition}_{label}_labeled.bam",
     log:
-        "logs/label_reads_with_condition/{individual}_{condition}_{label}_labeled.log"
+        "logs/label_reads_with_condition/{individual}_{condition}_{label}_labeled.log",
     benchmark:
         "benchmark/label_reads_condition/{individual}_{condition}_{label}.txt"
     threads: config.get("threads", 4)
@@ -173,7 +195,7 @@ rule align_sample:
     output:
         aligned="aligned/{individual}_{condition}_{label}_aligned.bam",
     log:
-        "logs/align_sample/{individual}_{condition}_{label}_aligned.log"
+        "logs/align_sample/{individual}_{condition}_{label}_aligned.log",
     threads: config.get("threads", 4)
     resources:
         runtime=480,
@@ -198,7 +220,7 @@ rule modify_rg:
         bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
         bai="aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai",
     log:
-        "logs/modify_rg/{individual}_{condition}_{label}_mod_aligned.log"
+        "logs/modify_rg/{individual}_{condition}_{label}_mod_aligned.log",
     threads: config.get("threads", 4)
     benchmark:
         "benchmark/modify_rg/{individual}_{condition}_{label}_rg.txt"
@@ -211,13 +233,14 @@ rule modify_rg:
         samtools index {output.bam}
         """
 
+
 rule create_dummy_vcf:
     conda:
         "envs/env.yml"
     output:
-        "mod_vcf/{individual}_empty.vcf.gz"
+        "mod_vcf/{individual}_empty.vcf.gz",
     log:
-        "logs/create_dummy_vcf/{individual}_empty.log"
+        "logs/create_dummy_vcf/{individual}_empty.log",
     shell:
         r"""
         mkdir -p $(dirname {output})
@@ -227,16 +250,17 @@ rule create_dummy_vcf:
         ) | bgzip -c > {output}
         """
 
+
 rule modify_vcf:
     conda:
         "envs/env.yml"
     input:
-        vcf=get_vcf_path
+        vcf=get_vcf_path,
     output:
         mod_vcf="mod_vcf/{individual}_mod.vcf.gz",
-        mod_vcf_tbi="mod_vcf/{individual}_mod.vcf.gz.tbi"
+        mod_vcf_tbi="mod_vcf/{individual}_mod.vcf.gz.tbi",
     log:
-        "logs/modify_vcf/{individual}_mod_vcf.log"
+        "logs/modify_vcf/{individual}_mod_vcf.log",
     threads: config.get("threads", 2)
     benchmark:
         "benchmark/modify_vcf/{individual}_mod_vcf.txt"
@@ -270,7 +294,7 @@ rule whatshap_haplotag:
         haplotagged_bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
         list_txt="whatshap/{individual}_{condition}_{label}.list.txt",
     log:
-        "logs/whatshap_haplotag/{individual}_{condition}_{label}.haplotag.log"
+        "logs/whatshap_haplotag/{individual}_{condition}_{label}.haplotag.log",
     params:
         script=workflow.source_path("scripts/add_hp0.sh"),
     benchmark:
@@ -298,7 +322,7 @@ rule extract_read_info:
     output:
         txt="whatshap/{individual}_{condition}_{label}.haplotagged.txt",
     log:
-        "logs/extract_read_info/{individual}_{condition}_{label}.haplotag.log"
+        "logs/extract_read_info/{individual}_{condition}_{label}.haplotag.log",
     benchmark:
         "benchmark/extract_read_info/{individual}_{condition}_{label}.txt"
     resources:
@@ -320,7 +344,7 @@ rule merge_samples:
         bam="merged/{individual}_all_conditions_merged.bam",
         bai="merged/{individual}_all_conditions_merged.bam.bai",
     log:
-        "logs/merge_samples/{individual}_conditions_merged.log"
+        "logs/merge_samples/{individual}_conditions_merged.log",
     threads: config.get("threads", 4)
     resources:
         runtime=480,
@@ -340,7 +364,7 @@ rule cluster:
         bam="merged/{individual}_all_conditions_merged.bam",
         bai="merged/{individual}_all_conditions_merged.bam.bai",
     log:
-        "logs/cluster/{individual}_all_conditions_merged.log"
+        "logs/cluster/{individual}_all_conditions_merged.log",
     output:
         clustered="clustered/{individual}_clustered.bam",
     threads: 20
@@ -363,7 +387,7 @@ rule align:
     output:
         aligned="aligned/{individual}_aligned.bam",
     log:
-        "logs/align/{individual}_aligned.log"
+        "logs/align/{individual}_aligned.log",
     threads: config.get("threads", 4)
     resources:
         runtime=480,
@@ -387,7 +411,7 @@ rule label_transcripts:
     output:
         bam="aligned/{individual}_aligned_labeled.bam",
     log:
-        "logs/label_transcripts/{individual}_aligned_labeled.log"
+        "logs/label_transcripts/{individual}_aligned_labeled.log",
     threads: config.get("threads", 4)
     benchmark:
         "benchmark/label_transcripts/{individual}_aligned_labeled.txt"
@@ -414,7 +438,7 @@ rule merge_all_aligned:
     output:
         "aligned/all_individuals_aligned_merged.bam",
     log:
-        "logs/merge_all_aligned/all_individuals_aligned_merged.log"
+        "logs/merge_all_aligned/all_individuals_aligned_merged.log",
     threads: config.get("threads", 4)
     resources:
         runtime=480,
@@ -439,7 +463,7 @@ rule collapse:
         collapsed_readstat="collapse/collapsed.read_stat.txt",
         collapsed_count="collapse/collapsed.flnc_count.txt",
     log:
-        "logs/collapse/collapsed.log"
+        "logs/collapse/collapsed.log",
     threads: config.get("threads", 4)
     resources:
         runtime=480,
@@ -451,16 +475,17 @@ rule collapse:
         isoseq collapse --num-threads {threads} {input} {output.collapsed_gff}
         """
 
+
 rule pigeon_prepare_annot:
     conda:
         "envs/env.yml"
     input:
-        gtf=config["pigeon_annot"]
+        gtf=config["pigeon_annot"],
     output:
-        gtf = "annotations/annotations.sorted.gtf",
-        pgi = "annotations/annotations.sorted.gtf.pgi"
+        gtf="annotations/annotations.sorted.gtf",
+        pgi="annotations/annotations.sorted.gtf.pgi",
     log:
-        "logs/pigeon_prepare_annot/pigeon_prepare.log"
+        "logs/pigeon_prepare_annot/pigeon_prepare.log",
     benchmark:
         "benchmark/pigeon_prepare/annotation_sort.txt"
     shell:
@@ -474,6 +499,7 @@ rule pigeon_prepare_annot:
         pigeon prepare annotations/annotations.gtf       
         """
 
+
 rule pigeon_process:
     conda:
         "envs/env.yml"
@@ -481,21 +507,21 @@ rule pigeon_process:
         collapsed_gff="collapse/collapsed.gff",
         collapsed_count="collapse/collapsed.flnc_count.txt",
         prepared_gtf="annotations/annotations.sorted.gtf",
-        prepared_index="annotations/annotations.sorted.gtf.pgi"
+        prepared_index="annotations/annotations.sorted.gtf.pgi",
     output:
         sorted_gff="pigeon/sorted.gff",
         classification="pigeon/pigeon_classification.txt",
-        report="pigeon/saturation.txt"
+        report="pigeon/saturation.txt",
     log:
-        "logs/pigeon_process/pigeon_process.log"
+        "logs/pigeon_process/pigeon_process.log",
     params:
-        reference=config["reference_genome"]
+        reference=config["reference_genome"],
     benchmark:
         "benchmark/pigeon_process/pigeon.txt"
     threads: config.get("threads", 4)
     resources:
         runtime=480,
-        mem_mb=80000
+        mem_mb=80000,
     shell:
         """
         pigeon sort {input.collapsed_gff} -o {output.sorted_gff}
@@ -516,7 +542,7 @@ rule create_dictionary:
     output:
         "tag/dictionary.tsv.gz",
     log:
-        "logs/create_dictionary/dictionary.log"
+        "logs/create_dictionary/dictionary.log",
     benchmark:
         "benchmark/create_dictionary/dictionary.txt"
     threads: config.get("threads", 4)
@@ -541,7 +567,7 @@ rule add_tags_to_bam:
         bam="tag/{individual}_{condition}_{label}.tagged.bam",
         bai="tag/{individual}_{condition}_{label}.tagged.bam.bai",
     log:
-        "logs/add_tags_to_bam/{individual}_{condition}_{label}.tagged.log"
+        "logs/add_tags_to_bam/{individual}_{condition}_{label}.tagged.log",
     benchmark:
         "benchmark/add_tags_to_bam/{individual}_{condition}_{label}_tagged.txt"
     threads: config.get("threads", 8)
@@ -565,7 +591,7 @@ rule qc_flnc:
         tsv="qc/{individual}_{condition}_{label}_qc_summary.tsv",
         plots_dir=directory("qc/{individual}_{condition}_{label}_plots"),
     log:
-        "logs/qc_flnc/{individual}_{condition}_{label}.qc.log"
+        "logs/qc_flnc/{individual}_{condition}_{label}.qc.log",
     params:
         output_dir="qc/{individual}_{condition}_{label}_plots",
         script=workflow.source_path("scripts/qc_metrics.py"),
@@ -576,9 +602,10 @@ rule qc_flnc:
         python {params.script} {input.bam} {output.tsv} {params.output_dir}
         """
 
+
 docs_dir = config["docs_dir"]
 reference_genome = config["reference_genome"]
-output_dir = config.get("output_dir", "Output") 
+
 
 rule isoranker_analysis:
     input:
@@ -587,7 +614,9 @@ rule isoranker_analysis:
         classification="pigeon/pigeon_classification.txt",
         genemap=os.path.join(docs_dir, "genemap2.txt"),
         hpo_file=os.path.join(docs_dir, "phenotype.hpoa"),
-        probands_file=os.path.join(docs_dir, "Multiome_samples_clinical_findings_2.11.25.tsv"),
+        probands_file=os.path.join(
+            docs_dir, "Multiome_samples_clinical_findings_2.11.25.tsv"
+        ),
     output:
         gene_with_phenotype=f"{output_dir}/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz",
         isoform_with_phenotype=f"{output_dir}/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz",
@@ -600,7 +629,7 @@ rule isoranker_analysis:
         pca_plot=f"{output_dir}/qc/pca_plot.pdf",
     threads: config.get("threads", 4)
     log:
-        f"logs/isoranker_analysis/isoranker.log"
+        f"logs/isoranker_analysis/isoranker.log",
     resources:
         runtime=480,
         mem_mb=500000,
@@ -608,7 +637,7 @@ rule isoranker_analysis:
         f"benchmark/isoranker.txt"
     params:
         output_dir=lambda wildcards, output: os.path.commonpath(list(output.values())),
-        ref_fa=reference_genome
+        ref_fa=reference_genome,
     conda:
         "envs/isoranker.yml"
     shell:
