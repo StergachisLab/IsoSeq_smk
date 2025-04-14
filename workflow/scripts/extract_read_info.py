@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-"""extract_read_info.py: Extract read quality, read length, and haplotype from BAM."""
+"""extract_read_info.py: Extract read quality, read length, and haplotype
+from haplotagged bam file.
+"""
 __author__ = "Adriana Sedeno"
 
 import sys
