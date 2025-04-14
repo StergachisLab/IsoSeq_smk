@@ -636,7 +636,7 @@ rule isoranker_analysis:
     benchmark:
         f"benchmark/isoranker.txt"
     params:
-        output_dir=lambda wildcards, output: os.path.commonpath(list(output.values())),
+        output_dir=lambda wildcards, output: os.path.commonpath(list(output)),
         ref_fa=reference_genome,
     conda:
         "envs/isoranker.yml"
