@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import os
 import pysam
@@ -12,7 +14,6 @@ def extract_qc_metrics(bam_file):
     try:
         bam = pysam.AlignmentFile(bam_file, "rb")
 
-        # Storage for metrics
         read_lengths = []
         isoform_counts = {}
         gene_counts = {}
@@ -22,11 +23,9 @@ def extract_qc_metrics(bam_file):
         hp_counts = {}
         mapq_scores = []
 
-        # Iterate through BAM reads
         for read in bam:
             read_lengths.append(read.query_length)
 
-            # Extract tags (isoform, gene, transcript)
             isoform = read.get_tag("in") if read.has_tag("in") else None
             gene = read.get_tag("gn") if read.has_tag("gn") else None
             transcript = read.get_tag("tn") if read.has_tag("tn") else None
@@ -38,7 +37,6 @@ def extract_qc_metrics(bam_file):
             if transcript:
                 transcript_counts[transcript] = transcript_counts.get(transcript, 0) + 1
 
-            # Extract categorical tags (sb, sc, HP)
             sb = read.get_tag("sb") if read.has_tag("sb") else None
             sc = read.get_tag("sc") if read.has_tag("sc") else None
             hp = read.get_tag("HP") if read.has_tag("HP") else None
@@ -50,12 +48,10 @@ def extract_qc_metrics(bam_file):
             if hp:
                 hp_counts[hp] = hp_counts.get(hp, 0) + 1
 
-            # MAPQ Score
             mapq_scores.append(read.mapping_quality)
 
         bam.close()
 
-        # Summarize QC metrics
         metrics = {
             "Total_FLNC_Reads": len(read_lengths),
             "Total_Unique_Isoforms": len(isoform_counts),
@@ -99,7 +95,10 @@ def plot_histogram(
         for pct, col in percentiles.items():
             value = np.percentile(data, pct)
             plt.axvline(
-                value, color=col, linestyle="dashed", label=f"{pct}%: {value:.0f}"
+                value,
+                color=col,
+                linestyle="dashed",
+                label=f"{pct}%: {value:.0f}",
             )
 
     plt.xlabel(xlabel)
@@ -143,6 +142,7 @@ def plot_read_length_by_category(length_dict, category_name, output_file):
     for category, lengths in length_dict.items():
         if len(lengths) > 1:
             sns.kdeplot(lengths, label=category, fill=True, alpha=0.4)
+
     plt.xlabel("Read Length")
     plt.ylabel("Density")
     plt.title(f"Read Length Distribution by {category_name}")
@@ -154,7 +154,9 @@ def plot_read_length_by_category(length_dict, category_name, output_file):
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
-        print("Usage: python qc_metrics.py <input_bam> <output_tsv> <output_plots_dir>")
+        print(
+            "Usage: python qc_metrics.py " "<input_bam> <output_tsv> <output_plots_dir>"
+        )
         sys.exit(1)
 
     bam_file = sys.argv[1]
@@ -163,7 +165,6 @@ if __name__ == "__main__":
 
     print(f"Processing BAM: {bam_file}")
     print(f"Saving output to: {output_tsv}")
-
     os.makedirs(output_dir, exist_ok=True)
 
     (
@@ -194,7 +195,7 @@ if __name__ == "__main__":
             "FLNC Read Length Distribution",
             os.path.join(
                 output_dir,
-                f"{os.path.basename(bam_file).replace('.bam', '_read_length.pdf')}",
+                os.path.basename(bam_file).replace(".bam", "_read_length.pdf"),
             ),
             percentiles=percentiles,
             color="blue",
@@ -207,7 +208,7 @@ if __name__ == "__main__":
             "Count",
             "MAPQ Score Distribution",
             os.path.join(
-                output_dir, f"{os.path.basename(bam_file).replace('.bam', '_mapq.pdf')}"
+                output_dir, os.path.basename(bam_file).replace(".bam", "_mapq.pdf")
             ),
             bins=30,
             color="black",
@@ -234,15 +235,16 @@ if __name__ == "__main__":
         "Structural Category (sc)",
         os.path.join(
             output_dir,
-            f"{os.path.basename(bam_file).replace('.bam', '_read_length_by_sc.pdf')}",
+            os.path.basename(bam_file).replace(".bam", "_read_length_by_sc.pdf"),
         ),
     )
+
     plot_read_length_by_category(
         sb_length_dict,
         "Subcategory (sb)",
         os.path.join(
             output_dir,
-            f"{os.path.basename(bam_file).replace('.bam', '_read_length_by_sb.pdf')}",
+            os.path.basename(bam_file).replace(".bam", "_read_length_by_sb.pdf"),
         ),
     )
 
@@ -254,8 +256,7 @@ if __name__ == "__main__":
     )
     sc_counts_df.to_csv(
         os.path.join(
-            output_dir,
-            f"{os.path.basename(bam_file).replace('.bam', '_sc_counts.tsv')}",
+            output_dir, os.path.basename(bam_file).replace(".bam", "_sc_counts.tsv")
         ),
         sep="\t",
         index=False,
@@ -266,8 +267,7 @@ if __name__ == "__main__":
     )
     sb_counts_df.to_csv(
         os.path.join(
-            output_dir,
-            f"{os.path.basename(bam_file).replace('.bam', '_sb_counts.tsv')}",
+            output_dir, os.path.basename(bam_file).replace(".bam", "_sb_counts.tsv")
         ),
         sep="\t",
         index=False,
