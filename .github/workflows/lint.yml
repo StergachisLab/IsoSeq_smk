@@ -23,8 +23,15 @@ jobs:
         run: |
           pip install black flake8
 
+      # Optional: Display version info
+      - name: Show tool versions
+        run: |
+          black --version
+          flake8 --version
+
+      # Use a config file for line length if present, fallback to --line-length=79
       - name: Run Black (code formatter)
-        run: black --check .
+        run: black --check . --line-length 79
 
       - name: Run flake8 (linter)
-        run: flake8 .
+        run: flake8 . --max-line-length=79
