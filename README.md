@@ -7,8 +7,9 @@
 ![Reproducible](https://img.shields.io/badge/reproducible-yes-brightgreen.svg)
 ![Lint & Format](https://github.com/StergachisLab/IsoSeq_smk/actions/workflows/lint.yml/badge.svg)
 
-
-![IsoSeq_smk Logo](IsoSeq_smk.png)
+<p align="center">
+  <img src="IsoSeq_smk.png" alt="IsoSeq_smk Logo" width="100"/>
+</p>
 
 # MAS-Seq processing pipeline
 
