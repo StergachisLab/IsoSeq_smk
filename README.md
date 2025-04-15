@@ -8,7 +8,7 @@
 ![Lint & Format](https://github.com/StergachisLab/IsoSeq_smk/actions/workflows/lint.yml/badge.svg)
 
 <p align="center">
-  <img src="IsoSeq_smk.png" alt="IsoSeq_smk Logo" width="200"/>
+  <img src="IsoSeq_smk.png" alt="IsoSeq_smk Logo" width="300"/>
 </p>
 
 # MAS-Seq processing pipeline
