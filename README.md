@@ -5,10 +5,10 @@
 ![Snakemake](https://img.shields.io/badge/snakemake-compatible-brightgreen.svg?logo=snakemake&logoColor=white)
 ![Conda](https://img.shields.io/badge/conda-envs-green?logo=anaconda)
 ![Reproducible](https://img.shields.io/badge/reproducible-yes-brightgreen.svg)
-![language](https://img.shields.io/github/languages/top/StergachisLab/IsoSeq_smk)
 ![Lint & Format](https://github.com/StergachisLab/IsoSeq_smk/actions/workflows/lint.yml/badge.svg)
 
 
+![IsoSeq_smk Logo](IsoSeq_smk.png)
 
 # MAS-Seq processing pipeline
 
