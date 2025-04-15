@@ -612,6 +612,7 @@ rule isoranker_analysis:
         read_stat="collapse/collapsed.read_stat.txt",
         sample_info=os.path.join(docs_dir, "Sample_info.tsv"),
         classification="pigeon/pigeon_classification.txt",
+        gtf_file="annotations/annotations.sorted.gtf",
         genemap=os.path.join(docs_dir, "genemap2.txt"),
         hpo_file=os.path.join(docs_dir, "phenotype.hpoa"),
         probands_file=os.path.join(
@@ -650,5 +651,6 @@ rule isoranker_analysis:
           --genemap_path {input.genemap} \
           --hpo_file_path {input.hpo_file} \
           --probands_file_path {input.probands_file} \
+          --gtf_path_input {input.gtf_file} \
           --final_output_dir {params.output_dir}
         """
