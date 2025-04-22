@@ -199,7 +199,7 @@ rule align_sample:
     threads: config.get("threads", 4)
     resources:
         runtime=480,
-        mem_mb=130000,
+        mem_mb=76800,
     params:
         reference=config["reference_genome"],
     benchmark:
@@ -285,7 +285,7 @@ rule whatshap_haplotag:
         "envs/env.yml"
     resources:
         runtime=480,
-        mem_mb=130000,
+        mem_mb=76800,
     input:
         bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
         phased_vcf_gz="mod_vcf/{individual}_mod.vcf.gz",
@@ -370,7 +370,7 @@ rule cluster:
     threads: 20
     resources:
         runtime=1800,
-        mem_mb=550000,
+        mem_mb=76800,
     benchmark:
         "benchmark/cluster/{individual}_all_conditions.txt"
     shell:
@@ -391,7 +391,7 @@ rule align:
     threads: config.get("threads", 4)
     resources:
         runtime=480,
-        mem_mb=130000,
+        mem_mb=76800,
     params:
         reference=config["reference_genome"],
     benchmark:
@@ -417,7 +417,7 @@ rule label_transcripts:
         "benchmark/label_transcripts/{individual}_aligned_labeled.txt"
     resources:
         runtime=480,
-        mem_mb=80000,
+        mem_mb=10240,
     shell:
         r"""
         (
@@ -442,7 +442,7 @@ rule merge_all_aligned:
     threads: config.get("threads", 4)
     resources:
         runtime=480,
-        mem_mb=80000,
+        mem_mb=10240,
     benchmark:
         "benchmark/merge_all_aligned/all_aligned_merged.txt"
     shell:
@@ -467,7 +467,7 @@ rule collapse:
     threads: config.get("threads", 4)
     resources:
         runtime=480,
-        mem_mb=80000,
+        mem_mb=20480,
     benchmark:
         "benchmark/collapse/collapse.txt"
     shell:
@@ -521,7 +521,7 @@ rule pigeon_process:
     threads: config.get("threads", 4)
     resources:
         runtime=480,
-        mem_mb=80000,
+        mem_mb=76800,
     shell:
         """
         pigeon sort {input.collapsed_gff} -o {output.sorted_gff}
@@ -548,7 +548,7 @@ rule create_dictionary:
     threads: config.get("threads", 4)
     resources:
         runtime=980,
-        mem_mb=500000,
+        mem_mb=374000,
     params:
         script=workflow.source_path("scripts/create_dictionary.R"),
     shell:
@@ -573,7 +573,7 @@ rule add_tags_to_bam:
     threads: config.get("threads", 8)
     resources:
         runtime=480,
-        mem_mb=15000,
+        mem_mb=20480,
     params:
         script=workflow.source_path("scripts/add_tags_to_bam.sh"),
     shell:
