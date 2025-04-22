@@ -4,7 +4,7 @@ latency-wait: 60
 max-jobs-per-second: 50
 default-resources:
   - disk_mb=4096
-  - mem_mb=80000
+  - mem_mb=7000
   - runtime=400
   - slurm_partition=ckpt
   - slurm_account=stergachislab
