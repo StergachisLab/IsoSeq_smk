@@ -61,8 +61,8 @@ counts <- dictionary %>%
   pivot_wider(c(sample, isoform), names_from = condition, values_from = n_cond) %>%
  mutate(across(everything(), ~replace(., is.na(.), 0))) %>%
     mutate(
-    iso_noncyclo_counts = if ("untreated" %in% colnames(.)) paste0("nc:i:", untreated) else "nc:i:0",
-    iso_cyclo_counts = if ("treated" %in% colnames(.)) paste0("cc:i:", treated) else "cc:i:0"
+    iso_noncyclo_counts = if ("untreated" %in% colnames(.)) paste0("nc:i:", untreated) else "sn:i:0",
+    iso_cyclo_counts = if ("treated" %in% colnames(.)) paste0("cc:i:", treated) else "sc:i:0"
   ) %>%
  select(-any_of(c("treated", "untreated")))
   #mutate(iso_noncyclo_counts = paste0("sn:i:", untreated),
