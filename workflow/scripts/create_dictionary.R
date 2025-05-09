@@ -77,6 +77,11 @@ dictionary <- left_join(dictionary, counts_hap) %>%
          associated_gene = paste0("gn:Z:", associated_gene),
          associated_transcript = paste0("tn:Z:", associated_transcript),
          subcategory = paste0("sb:Z:", subcategory)) %>%
+  distinct() %>%
+  mutate(
+    structural_category = ifelse(structural_category == "sc:Z:0", "sc:Z:unassigned", structural_category),
+    subcategory = ifelse(subcategory == "sb:Z:0", "sb:Z:unassigned", subcategory)
+  ) %>%
   distinct()
 
 out <- dictionary %>%
