@@ -43,8 +43,8 @@ You will need snakemake and the snakemake executor plugin to distribute jobs on 
 
 ```
 # 1) Create the conda environment by using the provided yml file
-# conda config --set channel_priority strict
-# conda env create --file snakemake_env.yml
+conda config --set channel_priority strict
+conda env create --file snakemake_env.yml
 
 # 2) Activate the conda environment
 conda activate snakemake_env

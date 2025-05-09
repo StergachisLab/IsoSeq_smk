@@ -9,3 +9,4 @@ dependencies:
   - pip
   - pip:
       - snakemake-executor-plugin-slurm==0.15.0
+      - snakemake-executor-plugin-cluster-generic==1.0.9

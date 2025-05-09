@@ -1,0 +1,29 @@
+executor: cluster-generic
+default-resources:
+  - disk_mb=4096
+  - mem_mb=8096
+  - time=120
+  - gpus=0
+cluster-generic-submit-cmd:
+  mkdir -p cluster_logs/{rule} &&
+  qsub
+    -cwd
+    -pe serial {threads}
+    -l mfree=$(({resources.mem_mb} / {threads}))M
+    -l h_rt={resources.time}m
+    -o cluster_logs/{rule}
+    -j y
+    -l disk_free={resources.disk_mb}M
+    -terse
+jobs: 20
+rerun-incomplete: True
+rerun-triggers: mtime
+cluster-generic-cancel-cmd: qdel
+# cluster-cancel-nargs: 500
+restart-times: 2
+printshellcmds: True
+# reason: True
+use-conda: True
+show-failed-logs: True 
+latency-wait: 30
+max-jobs-per-second: 50
