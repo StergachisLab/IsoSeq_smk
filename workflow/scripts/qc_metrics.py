@@ -254,7 +254,11 @@ if __name__ == "__main__":
 
     sc_counts_df = pd.DataFrame(
         [
-            {"structural_category": k, "read_count": len(v)}
+            {
+                "structural_category": k,
+                "read_count": len(v),
+                "median_read_length": int(np.median(v)) if v else 0,
+            }
             for k, v in sc_length_dict.items()
         ]
     )
@@ -272,7 +276,14 @@ if __name__ == "__main__":
     )
 
     sb_counts_df = pd.DataFrame(
-        [{"subcategory": k, "read_count": len(v)} for k, v in sb_length_dict.items()]
+        [
+            {
+                "subcategory": k,
+                "read_count": len(v),
+                "median_read_length": int(np.median(v)) if v else 0,
+            }
+            for k, v in sb_length_dict.items()
+        ]
     )
     if not sb_counts_df.empty:
         sb_counts_df["percentage"] = (
