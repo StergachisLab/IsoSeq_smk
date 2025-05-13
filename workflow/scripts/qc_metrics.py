@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 def extract_qc_metrics(bam_file):
     """Extract QC metrics from a given FLNC BAM file."""
     try:
@@ -74,15 +75,26 @@ def extract_qc_metrics(bam_file):
         print(f"Error processing BAM file {bam_file}: {e}")
         sys.exit(1)
 
+
 def plot_histogram(
-    data, xlabel, ylabel, title, output_file, bins=50, log_scale=False,
-    percentiles=None, color="blue"):
+    data,
+    xlabel,
+    ylabel,
+    title,
+    output_file,
+    bins=50,
+    log_scale=False,
+    percentiles=None,
+    color="blue",
+):
     plt.figure(figsize=(8, 5))
     sns.histplot(data, bins=bins, kde=True, color=color, label=xlabel)
     if percentiles and len(data) > 0:
         for pct, col in percentiles.items():
             value = np.percentile(data, pct)
-            plt.axvline(value, color=col, linestyle="dashed", label=f"{pct}%: {value:.0f}")
+            plt.axvline(
+                value, color=col, linestyle="dashed", label=f"{pct}%: {value:.0f}"
+            )
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
@@ -92,7 +104,10 @@ def plot_histogram(
     plt.savefig(output_file, format="pdf")
     plt.close()
 
-def plot_bar_chart(df, x_label, y_label, title, output_file, log_scale=False, color="blue"):
+
+def plot_bar_chart(
+    df, x_label, y_label, title, output_file, log_scale=False, color="blue"
+):
     plt.figure(figsize=(10, 5))
     if df.empty:
         print(f"Skipping {output_file} (No data to plot)")
@@ -107,6 +122,7 @@ def plot_bar_chart(df, x_label, y_label, title, output_file, log_scale=False, co
     plt.savefig(output_file, format="pdf")
     plt.close()
 
+
 def plot_read_length_by_category(length_dict, category_name, output_file):
     plt.figure(figsize=(10, 6))
     for category, lengths in length_dict.items():
@@ -119,6 +135,7 @@ def plot_read_length_by_category(length_dict, category_name, output_file):
     plt.tight_layout()
     plt.savefig(output_file, format="pdf")
     plt.close()
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
@@ -148,18 +165,20 @@ if __name__ == "__main__":
     qc_df = pd.DataFrame(qc_metrics.items(), columns=["Metric", "Value"])
 
     if read_lengths:
-        qc_df_extra = pd.DataFrame({
-            "Metric": [
-                "Median_FLNC_Read_Length",
-                "Percentile_10_FLNC_Length",
-                "Percentile_90_FLNC_Length"
-            ],
-            "Value": [
-                int(np.median(read_lengths)),
-                int(np.percentile(read_lengths, 10)),
-                int(np.percentile(read_lengths, 90))
-            ]
-        })
+        qc_df_extra = pd.DataFrame(
+            {
+                "Metric": [
+                    "Median_FLNC_Read_Length",
+                    "Percentile_10_FLNC_Length",
+                    "Percentile_90_FLNC_Length",
+                ],
+                "Value": [
+                    int(np.median(read_lengths)),
+                    int(np.percentile(read_lengths, 10)),
+                    int(np.percentile(read_lengths, 90)),
+                ],
+            }
+        )
         qc_df = pd.concat([qc_df, qc_df_extra], ignore_index=True)
 
     if qc_df.empty:
@@ -233,10 +252,12 @@ if __name__ == "__main__":
         ),
     )
 
-    sc_counts_df = pd.DataFrame([
-        {"structural_category": k, "read_count": len(v)}
-        for k, v in sc_length_dict.items()
-    ])
+    sc_counts_df = pd.DataFrame(
+        [
+            {"structural_category": k, "read_count": len(v)}
+            for k, v in sc_length_dict.items()
+        ]
+    )
     if not sc_counts_df.empty:
         sc_counts_df["percentage"] = (
             sc_counts_df["read_count"] / sc_counts_df["read_count"].sum() * 100
@@ -250,10 +271,9 @@ if __name__ == "__main__":
         index=False,
     )
 
-    sb_counts_df = pd.DataFrame([
-        {"subcategory": k, "read_count": len(v)}
-        for k, v in sb_length_dict.items()
-    ])
+    sb_counts_df = pd.DataFrame(
+        [{"subcategory": k, "read_count": len(v)} for k, v in sb_length_dict.items()]
+    )
     if not sb_counts_df.empty:
         sb_counts_df["percentage"] = (
             sb_counts_df["read_count"] / sb_counts_df["read_count"].sum() * 100
