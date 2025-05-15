@@ -61,7 +61,7 @@ The pipeline works when full paths are used to define all files and folders.
 Then run snakemake with the following command pointing to your own customized configuration file.
 
 To verify that the pipeline functions as expected, we can utilize the provided test data and configuration file available in the repository.
-When running the test with a single sample, it is necessary to exclude the final rule, isoranker_analysis, as this step requires multiple samples to execute correctly. To achieve this, we use the following command:
+When running the test with a single sample, it is necessary to exclude the final rule, isoranker_analysis, as this step requires multiple samples to execute correctly. To achieve this, we add the flag `run_isoranker: false` on our config yaml file. If that flag is not present, the following command might also help:
 
 ```
 snakemake --configfile config/github.config.yaml \
