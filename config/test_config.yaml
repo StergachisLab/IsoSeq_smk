@@ -11,3 +11,4 @@ docs_dir: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/docs
 threads: 8
 max_reads: 7000000
 downsample_reads: 5000000
+run_isoranker: false
