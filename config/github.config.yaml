@@ -13,3 +13,4 @@ docs_dir: docs
 threads: 4
 max_reads: 7000000
 downsample_reads: 100000
+run_isoranker: false
