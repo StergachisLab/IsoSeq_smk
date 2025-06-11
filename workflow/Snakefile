@@ -353,14 +353,13 @@ rule merge_samples:
     shell:
         """
 
-        input_files=({input})
+        input_files=({input.bam})
         num_files=${{#input_files[@]}}
 
         if [ $num_files -eq 1 ]; then
-            # Only one file, just copy it
-            cp {input} {output.bam}
+            cp {input.bam} {output.bam}
+            samtools index {output.bam}
         else
-            # Merge multiple files
             samtools merge -@ {threads} {output.bam} {input.bam}
             samtools index {output.bam}
         fi
@@ -379,7 +378,7 @@ rule cluster:
         clustered="clustered/{individual}_clustered.bam",
     threads: 20
     resources:
-        runtime=345600,
+        runtime=5760,
         mem_mb=102400,
     benchmark:
         "benchmark/cluster/{individual}_all_conditions.txt"
