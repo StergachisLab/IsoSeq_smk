@@ -1,6 +1,10 @@
 .vscode/**
 .snakemake/**
 results/**
+results_test/**
+test_counts/**
+docs/**
+config/test*.yaml
 logs/**
 .snakemake/**
 **.code-workspace

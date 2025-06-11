@@ -1,0 +1,17 @@
+---
+individuals:
+  UDN212054:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00465/hg38/results/pipelines/k-mer-variant-phasing/results/PS00465/PS00465.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00362:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00362/m84046_230829_213454_s3/MAS_3p--10X_IsoSeqX_bc03_5p/PS00362.m84046_230829_213454_s3.MAS_3p--10X_IsoSeqX_bc03_5p.flnc.bam
+    treated:
+      cyclo_PS00363:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00363/m84046_230829_213454_s3/MAS_3p--10X_IsoSeqX_bc04_5p/PS00363.m84046_230829_213454_s3.MAS_3p--10X_IsoSeqX_bc04_5p.flnc.bam
+
+docs_dir: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/docs
+reference_genome: /gscratch/stergachislab/assemblies/simple-names/hg38.fa
+pigeon_annot: /gscratch/stergachislab/asedeno/data/reference_files/gencode.v47.annotation.gtf
+threads: 4
+max_reads: 900000000
+downsample_reads: 90000000
