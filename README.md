@@ -84,6 +84,6 @@ We suggest using the following flags for execution control:
 nohup snakemake -s workflow/Snakefile \
 --profile profiles/slurm-executor/ \
 --configfile config/config.yaml \
--p -k --verbose --retries=1 \
+-p -k --verbose --retries=1 --rerun-incomplete \
 --directory results > nohup.capture
 ```
