@@ -1,6 +1,7 @@
 name: r-base
 channels:
   - conda-forge
+  - defaults
 dependencies:
   - r-base=4.2.*
   - r-dplyr

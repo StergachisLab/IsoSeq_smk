@@ -122,7 +122,7 @@ rule merge_individual_condition:
         bam="merged/{individual}_{condition}_{label}_merged.bam",
     threads: config.get("threads", 4)
     resources:
-        runtime=480,
+        runtime=530,
     params:
         max_reads=config["max_reads"],
         downsample_reads=config["downsample_reads"],
@@ -178,7 +178,7 @@ rule label_reads_with_condition:
         "benchmark/label_reads_condition/{individual}_{condition}_{label}.txt"
     threads: config.get("threads", 4)
     resources:
-        runtime=480,
+        runtime=530,
     shell:
         """
         samtools view -@ {threads} -h {input.bam} | \
@@ -198,7 +198,7 @@ rule align_sample:
         "logs/align_sample/{individual}_{condition}_{label}_aligned.log",
     threads: config.get("threads", 4)
     resources:
-        runtime=480,
+        runtime=530,
         mem_mb=76800,
     params:
         reference=config["reference_genome"],
@@ -225,7 +225,7 @@ rule modify_rg:
     benchmark:
         "benchmark/modify_rg/{individual}_{condition}_{label}_rg.txt"
     resources:
-        runtime=480,
+        runtime=530,
     shell:
         """
         samtools addreplacerg -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' \
@@ -284,7 +284,7 @@ rule whatshap_haplotag:
     conda:
         "envs/env.yml"
     resources:
-        runtime=480,
+        runtime=530,
         mem_mb=76800,
     input:
         bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
@@ -326,7 +326,7 @@ rule extract_read_info:
     benchmark:
         "benchmark/extract_read_info/{individual}_{condition}_{label}.txt"
     resources:
-        runtime=480,
+        runtime=530,
     params:
         script=workflow.source_path("scripts/extract_read_info.py"),
     shell:
@@ -347,13 +347,23 @@ rule merge_samples:
         "logs/merge_samples/{individual}_conditions_merged.log",
     threads: config.get("threads", 4)
     resources:
-        runtime=480,
+        runtime=530,
     benchmark:
         "benchmark/merge_samples/{individual}_all_conditions_merged.txt"
     shell:
         """
-        samtools merge -@ {threads} {output.bam} {input.bam}
-        samtools index {output.bam}
+
+        input_files=({input})
+        num_files=${{#input_files[@]}}
+
+        if [ $num_files -eq 1 ]; then
+            # Only one file, just copy it
+            cp {input} {output.bam}
+        else
+            # Merge multiple files
+            samtools merge -@ {threads} {output.bam} {input.bam}
+            samtools index {output.bam}
+        fi
         """
 
 
@@ -369,8 +379,8 @@ rule cluster:
         clustered="clustered/{individual}_clustered.bam",
     threads: 20
     resources:
-        runtime=1800,
-        mem_mb=76800,
+        runtime=345600,
+        mem_mb=102400,
     benchmark:
         "benchmark/cluster/{individual}_all_conditions.txt"
     shell:
@@ -390,7 +400,7 @@ rule align:
         "logs/align/{individual}_aligned.log",
     threads: config.get("threads", 4)
     resources:
-        runtime=480,
+        runtime=530,
         mem_mb=76800,
     params:
         reference=config["reference_genome"],
@@ -416,7 +426,7 @@ rule label_transcripts:
     benchmark:
         "benchmark/label_transcripts/{individual}_aligned_labeled.txt"
     resources:
-        runtime=480,
+        runtime=530,
         mem_mb=10240,
     shell:
         r"""
@@ -441,7 +451,7 @@ rule merge_all_aligned:
         "logs/merge_all_aligned/all_individuals_aligned_merged.log",
     threads: config.get("threads", 4)
     resources:
-        runtime=480,
+        runtime=530,
         mem_mb=10240,
     benchmark:
         "benchmark/merge_all_aligned/all_aligned_merged.txt"
@@ -466,8 +476,8 @@ rule collapse:
         "logs/collapse/collapsed.log",
     threads: config.get("threads", 4)
     resources:
-        runtime=480,
-        mem_mb=20480,
+        runtime=530,
+        mem_mb=20530,
     benchmark:
         "benchmark/collapse/collapse.txt"
     shell:
@@ -520,7 +530,7 @@ rule pigeon_process:
         "benchmark/pigeon_process/pigeon.txt"
     threads: config.get("threads", 4)
     resources:
-        runtime=480,
+        runtime=530,
         mem_mb=76800,
     shell:
         """
@@ -572,8 +582,8 @@ rule add_tags_to_bam:
         "benchmark/add_tags_to_bam/{individual}_{condition}_{label}_tagged.txt"
     threads: config.get("threads", 8)
     resources:
-        runtime=480,
-        mem_mb=20480,
+        runtime=530,
+        mem_mb=20530,
     params:
         script=workflow.source_path("scripts/add_tags_to_bam.sh"),
     shell:
@@ -632,7 +642,7 @@ rule isoranker_analysis:
     log:
         f"logs/isoranker_analysis/isoranker.log",
     resources:
-        runtime=480,
+        runtime=530,
         mem_mb=500000,
     benchmark:
         f"benchmark/isoranker.txt"
