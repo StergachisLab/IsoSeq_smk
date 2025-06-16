@@ -284,8 +284,8 @@ rule whatshap_haplotag:
     conda:
         "envs/env.yml"
     resources:
-        runtime=530,
-        mem_mb=76800,
+        runtime=730,
+        mem_mb=82800,
     input:
         bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
         phased_vcf_gz="mod_vcf/{individual}_mod.vcf.gz",
@@ -296,11 +296,13 @@ rule whatshap_haplotag:
     log:
         "logs/whatshap_haplotag/{individual}_{condition}_{label}.haplotag.log",
     params:
-        script=workflow.source_path("scripts/add_hp0.sh"),
+        script=workflow.source_path("scripts/add_hp0.py"),
     benchmark:
         "benchmark/whatshap/{individual}_{condition}_{label}_haplotag.txt"
     shell:
         """
+        set -euo pipefail
+
         if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then
             echo "Variants found. Running whatshap haplotag."
             whatshap haplotag {input.phased_vcf_gz} {input.bam} \
@@ -308,9 +310,13 @@ rule whatshap_haplotag:
                 --output-haplotag-list {output.list_txt}
         else
             echo "No variants found or condition failed. Running add_hp0.sh."
-            sh {params.script} {input.bam} {output.haplotagged_bam}
+            python {params.script} {input.bam} {output.haplotagged_bam}
             echo -e "#readname\thaplotype\tphaseset\tchromosome" > {output.list_txt}
         fi
+
+        echo "Validating output BAM..."
+        samtools quickcheck {output.haplotagged_bam} || \
+            (echo "ERROR: Output BAM failed validation!" && exit 1)
         """
 
 

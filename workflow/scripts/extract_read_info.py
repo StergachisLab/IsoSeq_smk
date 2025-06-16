@@ -20,10 +20,10 @@ def process_bam(bam_file, output_file):
             rq = read.get_tag("rq") if read.has_tag("rq") else "NA"
             read_length = len(read.query_sequence)
             hp = read.get_tag("HP") if read.has_tag("HP") else "0"
-            out.write(f"{read.query_name}\t{rq}\t{read_length}\t{hp}\n")
+            out.write("{}\t{}\t{}\t{}\n".format(read.query_name, rq, read_length, hp))
 
     bam.close()
-    print(f"Output written to {output_file}")
+    print("Output written to {}".format(output_file))
 
 
 if __name__ == "__main__":
