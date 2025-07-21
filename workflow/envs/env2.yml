@@ -1,10 +1,10 @@
+---
 name: isoseq2
 channels:
-  - bioconda 
+  - bioconda
   - conda-forge
   - defaults
 dependencies:
   - python
   - isoseq=4.3
   - pbpigeon
-

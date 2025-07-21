@@ -1,7 +1,9 @@
-name: isoseq3
+---
+name: whatshap_env
 channels:
-  - bioconda
   - conda-forge
-  - defaults
 dependencies:
-  - whatshap
+  - python=3.11
+  - pip
+  - pip:
+      - git+https://github.com/whatshap/whatshap
