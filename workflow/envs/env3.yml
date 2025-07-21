@@ -1,0 +1,7 @@
+name: isoseq3
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - whatshap

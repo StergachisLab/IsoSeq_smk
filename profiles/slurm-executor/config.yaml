@@ -3,9 +3,9 @@ jobs: 500
 latency-wait: 60
 max-jobs-per-second: 50
 default-resources:
-  - disk_mb=4096
-  - mem_mb=7000
-  - runtime=800
+  - disk_mb=8096
+  - mem_mb=10000
+  - runtime=1200
   - slurm_partition=cpu-g2
   - slurm_account=stergachislab
 use-conda: true

@@ -122,7 +122,7 @@ rule merge_individual_condition:
         bam="merged/{individual}_{condition}_{label}_merged.bam",
     threads: config.get("threads", 4)
     resources:
-        runtime=530,
+        runtime=930,
     params:
         max_reads=config["max_reads"],
         downsample_reads=config["downsample_reads"],
@@ -178,7 +178,7 @@ rule label_reads_with_condition:
         "benchmark/label_reads_condition/{individual}_{condition}_{label}.txt"
     threads: config.get("threads", 4)
     resources:
-        runtime=530,
+        runtime=930,
     shell:
         """
         samtools view -@ {threads} -h {input.bam} | \
@@ -198,7 +198,7 @@ rule align_sample:
         "logs/align_sample/{individual}_{condition}_{label}_aligned.log",
     threads: config.get("threads", 4)
     resources:
-        runtime=530,
+        runtime=930,
         mem_mb=76800,
     params:
         reference=config["reference_genome"],
@@ -282,7 +282,7 @@ rule modify_vcf:
 
 rule whatshap_haplotag:
     conda:
-        "envs/env.yml"
+        "envs/env3.yml"
     resources:
         runtime=730,
         mem_mb=82800,

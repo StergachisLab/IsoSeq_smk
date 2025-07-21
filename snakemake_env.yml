@@ -1,12 +1,12 @@
+---
 name: snakemake_env
 channels:
   - bioconda
   - conda-forge
+  - defaults
 dependencies:
   - python=3.11
-  - conda=24.7.1 
-  - snakemake=8.27.1
   - pip
+  - snakemake=8.27.1
   - pip:
       - snakemake-executor-plugin-slurm==0.15.0
-      - snakemake-executor-plugin-cluster-generic==1.0.9
