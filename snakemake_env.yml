@@ -5,8 +5,8 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.11
+  - python=3.11.13
   - pip
-  - snakemake=8.27.1
+  - snakemake=9.8.1
   - pip:
       - snakemake-executor-plugin-slurm==0.15.0
