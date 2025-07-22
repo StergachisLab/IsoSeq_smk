@@ -6,7 +6,7 @@ channels:
   - defaults
 dependencies:
   - python=3.11.13
-  - pip
+  - pip=25.1.1
   - snakemake=9.8.1
   - pip:
       - snakemake-executor-plugin-slurm==0.15.0
