@@ -195,7 +195,7 @@ rule align_sample:
     conda:
         "envs/env.yml"
     input:
-        ref=ancient(config["reference_genome"]),
+        reference=ancient(config["reference_genome"]),
         bam="merged/{individual}_{condition}_{label}_labeled.bam",
     output:
         aligned=temp("aligned/{individual}_{condition}_{label}_aligned.bam"),
