@@ -213,8 +213,9 @@ rule align_sample:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        pbmm2 align {input.reference} {input.bam} {output.aligned} \
-            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
+        pbmm2 align \
+            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO \
+            {input.reference} {input.bam} {output.aligned} 
         """
 
 
