@@ -31,17 +31,16 @@ samtools view -@ "$threads" "$input_bam" | cut -f1 | sort -u | \
     sort -k1,1 > "${output_bam}.filtered_dict.tsv"
 
 # Step 3: Stream BAM reads and merge with dictionary dynamically
+# and then sort the BAM output
 echo "Processing BAM reads and appending tags..."
 samtools view -@ "$threads" "$input_bam" | sort -k1,1 | \
     join -t $'\t' -1 1 -2 1 - "${output_bam}.filtered_dict.tsv" | \
-    cat "${output_bam}.header.sam" - | samtools view -@ "$threads" -b -o "${output_bam}.unsorted.bam"
-
-# Step 4: Sort BAM before indexing
-echo "Sorting BAM..."
-samtools sort -@ "$threads" --write-index -o "${output_bam}##idx##${output_bam}.bai" "${output_bam}.unsorted.bam"
+    cat "${output_bam}.header.sam" - | \
+    samtools view -@ "$threads" -u | \
+    samtools sort -@ "$threads" --write-index -o "${output_bam}##idx##${output_bam}.bai" 
 
 # Cleanup temporary header file and filtered dictionary
-rm "${output_bam}.header.sam" "${output_bam}.filtered_dict.tsv" "${output_bam}.unsorted.bam"
+rm "${output_bam}.header.sam" "${output_bam}.filtered_dict.tsv"
 
 # Confirm completion
 if [ $? -eq 0 ]; then
