@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def extract_qc_metrics(bam_file):
+def extract_qc_metrics(bam_file, threads=8):
     """Extract QC metrics from a given FLNC BAM file."""
     try:
-        bam = pysam.AlignmentFile(bam_file, "rb")
+        bam = pysam.AlignmentFile(bam_file, "rb", threads=threads)
 
         read_lengths = []
         isoform_counts = {}
@@ -139,12 +139,13 @@ def plot_read_length_by_category(length_dict, category_name, output_file):
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
-        print("Usage: python qc_metrics.py <input_bam> <output_tsv> <output_plots_dir>")
+        print("Usage: python qc_metrics.py <input_bam> <output_tsv> <output_plots_dir> <threads>")
         sys.exit(1)
 
     bam_file = sys.argv[1]
     output_tsv = sys.argv[2]
     output_dir = sys.argv[3]
+    threads = int(sys.argv[4]) if len(sys.argv) > 4 else 8
 
     print(f"Processing BAM: {bam_file}")
     print(f"Saving output to: {output_tsv}")
@@ -160,7 +161,7 @@ if __name__ == "__main__":
         sc_counts,
         hp_counts,
         mapq_scores,
-    ) = extract_qc_metrics(bam_file)
+    ) = extract_qc_metrics(bam_file, threads)
 
     qc_df = pd.DataFrame(qc_metrics.items(), columns=["Metric", "Value"])
 
