@@ -199,6 +199,7 @@ rule align_sample:
         bam="merged/{individual}_{condition}_{label}_labeled.bam",
     output:
         aligned=temp("aligned/{individual}_{condition}_{label}_aligned.bam"),
+        bai="aligned/{individual}_{condition}_{label}_aligned.bam.bai",
     log:
         "logs/align_sample/{individual}_{condition}_{label}_aligned.log",
     threads: config.get("threads", 4)
