@@ -242,7 +242,8 @@ rule modify_rg:
 
         samtools addreplacerg -@ {threads} \
             -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' \
-            -o {output.bam} {input.bam}##idx##{output.bai}
+            --write-index -o {output.bam}##idx##{output.bai} \
+            {input.bam}
         """
 
 
