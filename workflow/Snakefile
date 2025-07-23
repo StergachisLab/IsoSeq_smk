@@ -171,7 +171,7 @@ rule label_reads_with_condition:
     input:
         bam="merged/{individual}_{condition}_{label}_merged.bam",
     output:
-        bam="merged/{individual}_{condition}_{label}_labeled.bam",
+        bam=temp("merged/{individual}_{condition}_{label}_labeled.bam"),
     log:
         "logs/label_reads_with_condition/{individual}_{condition}_{label}_labeled.log",
     benchmark:
@@ -193,7 +193,7 @@ rule align_sample:
     input:
         bam="merged/{individual}_{condition}_{label}_labeled.bam",
     output:
-        aligned="aligned/{individual}_{condition}_{label}_aligned.bam",
+        aligned=temp("aligned/{individual}_{condition}_{label}_aligned.bam"),
     log:
         "logs/align_sample/{individual}_{condition}_{label}_aligned.log",
     threads: config.get("threads", 4)
@@ -238,7 +238,7 @@ rule create_dummy_vcf:
     conda:
         "envs/env.yml"
     output:
-        "mod_vcf/{individual}_empty.vcf.gz",
+        temp("mod_vcf/{individual}_empty.vcf.gz"),
     log:
         "logs/create_dummy_vcf/{individual}_empty.log",
     shell:
@@ -400,7 +400,7 @@ rule align:
     input:
         "clustered/{individual}_clustered.bam",
     output:
-        aligned="aligned/{individual}_aligned.bam",
+        aligned=temp("aligned/{individual}_aligned.bam"),
     log:
         "logs/align/{individual}_aligned.log",
     threads: config.get("threads", 4)
@@ -424,7 +424,7 @@ rule label_transcripts:
     input:
         bam="aligned/{individual}_aligned.bam",
     output:
-        bam="aligned/{individual}_aligned_labeled.bam",
+        bam=temp("aligned/{individual}_aligned_labeled.bam"),
     log:
         "logs/label_transcripts/{individual}_aligned_labeled.log",
     threads: config.get("threads", 4)
@@ -451,7 +451,7 @@ rule merge_all_aligned:
             individual=config["individuals"].keys(),
         ),
     output:
-        "aligned/all_individuals_aligned_merged.bam",
+        temp("aligned/all_individuals_aligned_merged.bam"),
     log:
         "logs/merge_all_aligned/all_individuals_aligned_merged.log",
     threads: config.get("threads", 4)
