@@ -456,7 +456,7 @@ rule label_transcripts:
     input:
         bam="aligned/{individual}_aligned.bam",
     output:
-        bam=temp("aligned/{individual}_aligned_labeled.bam"),
+        bam="aligned/{individual}_aligned_labeled.bam",
     log:
         "logs/label_transcripts/{individual}_aligned_labeled.log",
     threads: config.get("threads", 4)
