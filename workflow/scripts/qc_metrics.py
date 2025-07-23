@@ -139,7 +139,9 @@ def plot_read_length_by_category(length_dict, category_name, output_file):
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
-        print("Usage: python qc_metrics.py <input_bam> <output_tsv> <output_plots_dir> <threads>")
+        print(
+            "Usage: python qc_metrics.py <input_bam> <output_tsv> <output_plots_dir> <threads>"
+        )
         sys.exit(1)
 
     bam_file = sys.argv[1]
