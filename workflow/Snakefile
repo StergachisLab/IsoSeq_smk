@@ -317,8 +317,9 @@ rule whatshap_haplotag:
         "benchmark/whatshap/{individual}_{condition}_{label}_haplotag.txt"
     shell:
         """
-        exec &> >(tee -a {log})
+        exec > >(tee -a {log}) 2>&1
         set -euo pipefail
+        set -x
 
         if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then
             echo "Variants found. Running whatshap haplotag."
