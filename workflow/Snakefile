@@ -130,6 +130,7 @@ rule merge_individual_condition:
         "benchmark/merge_individual_condition/{individual}_{condition}_{label}.txt"
     shell:
         r"""
+        exec &> >(tee -a {log})
         set -euo pipefail
 
         max_reads={params.max_reads}
@@ -181,6 +182,9 @@ rule label_reads_with_condition:
         runtime=930,
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         samtools view -@ {threads} -h {input.bam} | \
         awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}' | \
         samtools view -bS - > {output.bam}
@@ -206,6 +210,9 @@ rule align_sample:
         "benchmark/align_samples/{individual}_{condition}_{label}.txt"
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         pbmm2 align {params.reference} {input.bam} {output.aligned} \
             --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
         """
@@ -228,6 +235,9 @@ rule modify_rg:
         runtime=530,
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         samtools addreplacerg -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' \
             -o {output.bam} {input.bam}
         samtools index {output.bam}
@@ -243,6 +253,9 @@ rule create_dummy_vcf:
         "logs/create_dummy_vcf/{individual}_empty.log",
     shell:
         r"""
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         mkdir -p $(dirname {output})
         (
             echo "##fileformat=VCFv4.2"
@@ -266,6 +279,9 @@ rule modify_vcf:
         "benchmark/modify_vcf/{individual}_mod_vcf.txt"
     shell:
         r"""
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         if [[ "$(basename {input.vcf})" == *_empty.vcf.gz ]] || [ ! -s {input.vcf} ]; then
             # No VCF provided, use dummy already created
             cp {input.vcf} {output.mod_vcf}
@@ -301,6 +317,7 @@ rule whatshap_haplotag:
         "benchmark/whatshap/{individual}_{condition}_{label}_haplotag.txt"
     shell:
         """
+        exec &> >(tee -a {log})
         set -euo pipefail
 
         if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then
@@ -337,6 +354,9 @@ rule extract_read_info:
         script=workflow.source_path("scripts/extract_read_info.py"),
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         python {params.script} {input.bam} {output.txt}
         """
 
@@ -358,6 +378,8 @@ rule merge_samples:
         "benchmark/merge_samples/{individual}_all_conditions_merged.txt"
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
 
         input_files=({input.bam})
         num_files=${{#input_files[@]}}
@@ -390,6 +412,9 @@ rule cluster:
         "benchmark/cluster/{individual}_all_conditions.txt"
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         isoseq cluster2 {input.bam} {output.clustered} -j {threads} --singletons
         """
 
@@ -413,6 +438,9 @@ rule align:
         "benchmark/align/{individual}_aligned.txt"
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         pbmm2 align {params.reference} {input} {output.aligned} \
             --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
         """
@@ -435,6 +463,9 @@ rule label_transcripts:
         mem_mb=10240,
     shell:
         r"""
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         (
             samtools view -@ {threads} -h {input.bam} \
             | awk -v id={wildcards.individual} 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}'
@@ -462,6 +493,9 @@ rule merge_all_aligned:
         "benchmark/merge_all_aligned/all_aligned_merged.txt"
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         samtools merge -@ {threads} {output} {input}
         samtools index {output}
         """
@@ -487,6 +521,9 @@ rule collapse:
         "benchmark/collapse/collapse.txt"
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         isoseq collapse --num-threads {threads} {input} {output.collapsed_gff}
         """
 
@@ -505,6 +542,9 @@ rule pigeon_prepare_annot:
         "benchmark/pigeon_prepare/annotation_sort.txt"
     shell:
         r"""
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         if file {input.gtf} | grep -q 'gzip compressed'; then
             gunzip -c {input.gtf} > annotations/annotations.gtf
         else
@@ -539,6 +579,9 @@ rule pigeon_process:
         mem_mb=76800,
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         pigeon sort {input.collapsed_gff} -o {output.sorted_gff}
         pigeon classify {output.sorted_gff} {input.prepared_gtf} {params.reference} \
             --flnc {input.collapsed_count} -d pigeon -o 'pigeon'
@@ -568,7 +611,10 @@ rule create_dictionary:
         script=workflow.source_path("scripts/create_dictionary.R"),
     shell:
         """
-        Rscript {params.script} {input.collapsed} whatshap/ {input.classification} {threads} tag > {log} 2>&1
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
+        Rscript {params.script} {input.collapsed} whatshap/ {input.classification} {threads} tag
         """
 
 
@@ -593,6 +639,9 @@ rule add_tags_to_bam:
         script=workflow.source_path("scripts/add_tags_to_bam.sh"),
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         bash {params.script} {input.bam} {input.dictionary} {output.bam} {threads}
         """
 
@@ -614,6 +663,9 @@ rule qc_flnc:
         "benchmark/qc_flnc/{individual}_{condition}_{label}_qc.txt"
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         python {params.script} {input.bam} {output.tsv} {params.output_dir}
         """
 
@@ -658,6 +710,9 @@ rule isoranker_analysis:
         "envs/isoranker.yml"
     shell:
         """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
         isoranker_pb_run_analysis \
           --read_stat_path {input.read_stat} \
           --reference_fasta_path {params.ref_fa} \
