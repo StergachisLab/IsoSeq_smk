@@ -199,7 +199,7 @@ rule align_sample:
         bam="merged/{individual}_{condition}_{label}_labeled.bam",
     output:
         aligned=temp("aligned/{individual}_{condition}_{label}_aligned.bam"),
-        bai="aligned/{individual}_{condition}_{label}_aligned.bam.bai",
+        bai=temp("aligned/{individual}_{condition}_{label}_aligned.bam.bai"),
     log:
         "logs/align_sample/{individual}_{condition}_{label}_aligned.log",
     threads: config.get("threads", 4)
@@ -226,8 +226,8 @@ rule modify_rg:
         bam="aligned/{individual}_{condition}_{label}_aligned.bam",
         bai="aligned/{individual}_{condition}_{label}_aligned.bam.bai",
     output:
-        bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
-        bai="aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai",
+        bam=temp("aligned/{individual}_{condition}_{label}_modified_aligned.bam"),
+        bai=temp("aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai"),
     log:
         "logs/modify_rg/{individual}_{condition}_{label}_mod_aligned.log",
     threads: config.get("threads", 4)
@@ -371,8 +371,8 @@ rule merge_samples:
     input:
         bam=combine_labels,
     output:
-        bam="merged/{individual}_all_conditions_merged.bam",
-        bai="merged/{individual}_all_conditions_merged.bam.bai",
+        bam=temp("merged/{individual}_all_conditions_merged.bam"),
+        bai=temp("merged/{individual}_all_conditions_merged.bam.bai"),
     log:
         "logs/merge_samples/{individual}_conditions_merged.log",
     threads: config.get("threads", 4)
@@ -407,7 +407,7 @@ rule cluster:
     log:
         "logs/cluster/{individual}_all_conditions_merged.log",
     output:
-        clustered="clustered/{individual}_clustered.bam",
+        clustered=temp("clustered/{individual}_clustered.bam"),
     threads: 20
     resources:
         runtime=5760,
