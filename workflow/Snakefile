@@ -148,7 +148,7 @@ rule merge_individual_condition:
         fi
 
         # Check total reads in the resulting BAM file
-        total_reads=$(samtools view -c {output.bam})
+        total_reads=$(samtools view -@ {threads} -c {output.bam})
         echo "Total reads in merged BAM: $total_reads"
 
         # Downsampling if needed
@@ -157,7 +157,7 @@ rule merge_individual_condition:
             temp_downsampled_bam=$(mktemp)
             fraction=$(echo "scale=6; $downsample_reads / $total_reads" | bc)
             fraction=$(echo "$fraction" | sed 's/^0//')
-            samtools view -s 42$fraction -b {output.bam} > "$temp_downsampled_bam"
+            samtools view -@ {threads} -s 42$fraction -b {output.bam} > "$temp_downsampled_bam"
             mv "$temp_downsampled_bam" {output.bam}
             echo "Downsampling completed and replaced the original merged BAM."
         else
@@ -187,7 +187,7 @@ rule label_reads_with_condition:
 
         samtools view -@ {threads} -h {input.bam} | \
         awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}' | \
-        samtools view -bS - > {output.bam}
+        samtools view -@ {threads} -o {output.bam}
         """
 
 
@@ -195,17 +195,17 @@ rule align_sample:
     conda:
         "envs/env.yml"
     input:
+        reference=ancient(config["reference_genome"]),
         bam="merged/{individual}_{condition}_{label}_labeled.bam",
     output:
-        aligned="aligned/{individual}_{condition}_{label}_aligned.bam",
+        aligned=temp("aligned/{individual}_{condition}_{label}_aligned.bam"),
+        bai=temp("aligned/{individual}_{condition}_{label}_aligned.bam.bai"),
     log:
         "logs/align_sample/{individual}_{condition}_{label}_aligned.log",
     threads: config.get("threads", 4)
     resources:
         runtime=930,
         mem_mb=76800,
-    params:
-        reference=config["reference_genome"],
     benchmark:
         "benchmark/align_samples/{individual}_{condition}_{label}.txt"
     shell:
@@ -213,8 +213,9 @@ rule align_sample:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        pbmm2 align {params.reference} {input.bam} {output.aligned} \
-            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
+        pbmm2 align \
+            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO \
+            {input.reference} {input.bam} {output.aligned} 
         """
 
 
@@ -223,6 +224,7 @@ rule modify_rg:
         "envs/env.yml"
     input:
         bam="aligned/{individual}_{condition}_{label}_aligned.bam",
+        bai="aligned/{individual}_{condition}_{label}_aligned.bam.bai",
     output:
         bam=temp("aligned/{individual}_{condition}_{label}_modified_aligned.bam"),
         bai=temp("aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai"),
@@ -238,9 +240,10 @@ rule modify_rg:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        samtools addreplacerg -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' \
-            -o {output.bam} {input.bam}
-        samtools index {output.bam}
+        samtools addreplacerg -@ {threads} \
+            -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' \
+            --write-index -o {output.bam}##idx##{output.bai} \
+            {input.bam}
         """
 
 
@@ -387,10 +390,10 @@ rule merge_samples:
 
         if [ $num_files -eq 1 ]; then
             cp {input.bam} {output.bam}
-            samtools index {output.bam}
+            samtools index -@ {threads} {output.bam}
         else
-            samtools merge -@ {threads} {output.bam} {input.bam}
-            samtools index {output.bam}
+            samtools merge -@ {threads} --write-index \
+                {output.bam}##idx##{output.bai} {input.bam}
         fi
         """
 
@@ -483,7 +486,8 @@ rule merge_all_aligned:
             individual=config["individuals"].keys(),
         ),
     output:
-        temp("aligned/all_individuals_aligned_merged.bam"),
+        bam=temp("aligned/all_individuals_aligned_merged.bam"),
+        bai=temp("aligned/all_individuals_aligned_merged.bam.bai"),
     log:
         "logs/merge_all_aligned/all_individuals_aligned_merged.log",
     threads: config.get("threads", 4)
@@ -497,8 +501,9 @@ rule merge_all_aligned:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        samtools merge -@ {threads} {output} {input}
-        samtools index {output}
+        samtools merge \
+            --write-index -@ {threads} \
+            {output.bam}##idx##{output.bai} {input} 
         """
 
 
@@ -506,7 +511,8 @@ rule collapse:
     conda:
         "envs/env2.yml"
     input:
-        "aligned/all_individuals_aligned_merged.bam",
+        bam="aligned/all_individuals_aligned_merged.bam",
+        bai="aligned/all_individuals_aligned_merged.bam.bai",
     output:
         collapsed_gff="collapse/collapsed.gff",
         collapsed_abundance="collapse/collapsed.abundance.txt",
@@ -525,7 +531,7 @@ rule collapse:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        isoseq collapse --num-threads {threads} {input} {output.collapsed_gff}
+        isoseq collapse --num-threads {threads} {input.bam} {output.collapsed_gff}
         """
 
 

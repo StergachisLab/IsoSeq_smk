@@ -16,7 +16,7 @@
 This is a pipeline designed to process [MAS-Seq data from PacBio](https://isoseq.how/). In particular, this pipeline helps with the following steps: clustering, alignment, merging, collapsing and annotating with pigeon, as well as the inclusion of annotations back to the refined `flnc.bam` files. The pipeline allows to combine different samples (PS0001, PS0002) within a condition (treated/untreated) per individual.
 Multiple individuals can be included for a combined analysis, ensuring that all samples receive consistent transcript/isoform IDs for downstream analyses.
 
-The pipeline takes unaligned `flnc.bam` files as input. If multiple `flnc.bam` files exist for a single condition (replicates), they can all be added to the YAML file and will be merged prior to any processing. We highly recommend including a phased VCF file generated from  DeepVariant (Fiber-seq from same sample) + HiPhase,  since we use this file to help haplotag each read. Ideally, this phased VCF should be specified on the `config.yaml` file. If no phased VCF is available, an artificial `HP:i:0` tag will be assigned to the annotations.
+The pipeline takes unaligned `flnc.bam` files as input. If multiple `flnc.bam` files exist for a single condition (replicates), they can all be added to the YAML file and will be merged prior to any processing. We highly recommend including a phased VCF file generated from DeepVariant (Fiber-seq from same sample) + HiPhase, since we use this file to help haplotag each read. Ideally, this phased VCF should be specified on the `config.yaml` file. If no phased VCF is available, an artificial `HP:i:0` tag will be assigned to the annotations.
 
 In this pipeline, we also incorporate custom Iso-Seq tags into the aligned `flnc.bam` files as part of the final output. These tags aim to integrate information derived from the Pigeon output file `pigeon_classification.txt`:
 
@@ -53,15 +53,15 @@ conda config --set solver classic
 
 ## Testing
 
-First set up a configuration file. 
-See  `config/github.config.yaml` for a template. 
+First set up a configuration file.
+See `config/github.config.yaml` for a template.
 See `config/test_config.yaml` for a commented example when running a single condition.  
-See `config/config.yaml`  for a full example processing multiple samples with different SMRTcells and and conditions.
-The pipeline works when full paths are used to define all files and folders. 
+See `config/config.yaml` for a full example processing multiple samples with different SMRTcells and and conditions.
+The pipeline works when full paths are used to define all files and folders.
 Then run snakemake with the following command pointing to your own customized configuration file.
 
 To verify that the pipeline functions as expected, we can utilize the provided test data and configuration file available in the repository.
-When running the test with a single sample, it is necessary to exclude the final rule, isoranker_analysis, as this step requires multiple samples and additional files to execute correctly. To achieve this, we add the flag `run_isoranker: false` on our config yaml file. 
+When running the test with a single sample, it is necessary to exclude the final rule, isoranker_analysis, as this step requires multiple samples and additional files to execute correctly. To achieve this, we add the flag `run_isoranker: false` on our config yaml file.
 
 ```
 snakemake --configfile config/github.config.yaml \
