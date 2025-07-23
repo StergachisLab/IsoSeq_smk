@@ -223,6 +223,7 @@ rule modify_rg:
         "envs/env.yml"
     input:
         bam="aligned/{individual}_{condition}_{label}_aligned.bam",
+        bai="aligned/{individual}_{condition}_{label}_aligned.bam.bai",
     output:
         bam="aligned/{individual}_{condition}_{label}_modified_aligned.bam",
         bai="aligned/{individual}_{condition}_{label}_modified_aligned.bam.bai",
@@ -239,8 +240,7 @@ rule modify_rg:
         set -euo pipefail
 
         samtools addreplacerg -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' \
-            -o {output.bam} {input.bam}
-        samtools index {output.bam}
+            -o {output.bam} {input.bam}##idx##{output.bai}
         """
 
 
@@ -387,10 +387,10 @@ rule merge_samples:
 
         if [ $num_files -eq 1 ]; then
             cp {input.bam} {output.bam}
-            samtools index {output.bam}
+            samtools index -@ {threads} {output.bam}
         else
-            samtools merge -@ {threads} {output.bam} {input.bam}
-            samtools index {output.bam}
+            samtools merge -@ {threads} --write-index \
+                {output.bam}##idx##{output.bai} {input.bam}
         fi
         """
 
@@ -483,7 +483,8 @@ rule merge_all_aligned:
             individual=config["individuals"].keys(),
         ),
     output:
-        temp("aligned/all_individuals_aligned_merged.bam"),
+        bam=temp("aligned/all_individuals_aligned_merged.bam"),
+        bai=temp("aligned/all_individuals_aligned_merged.bam.bai"),
     log:
         "logs/merge_all_aligned/all_individuals_aligned_merged.log",
     threads: config.get("threads", 4)
@@ -497,8 +498,9 @@ rule merge_all_aligned:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        samtools merge -@ {threads} {output} {input}
-        samtools index {output}
+        samtools merge \
+            --write-index -@ {threads} \
+            {output.bam}##idx##{output.bai} {input} 
         """
 
 
@@ -506,7 +508,8 @@ rule collapse:
     conda:
         "envs/env2.yml"
     input:
-        "aligned/all_individuals_aligned_merged.bam",
+        bam="aligned/all_individuals_aligned_merged.bam",
+        bai="aligned/all_individuals_aligned_merged.bam.bai",
     output:
         collapsed_gff="collapse/collapsed.gff",
         collapsed_abundance="collapse/collapsed.abundance.txt",
@@ -525,7 +528,7 @@ rule collapse:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        isoseq collapse --num-threads {threads} {input} {output.collapsed_gff}
+        isoseq collapse --num-threads {threads} {input.bam} {output.collapsed_gff}
         """
 
 

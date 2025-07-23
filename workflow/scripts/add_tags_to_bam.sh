@@ -38,11 +38,7 @@ samtools view -@ "$threads" "$input_bam" | sort -k1,1 | \
 
 # Step 4: Sort BAM before indexing
 echo "Sorting BAM..."
-samtools sort -@ "$threads" -o "$output_bam" "${output_bam}.unsorted.bam"
-
-# Step 5: Index BAM
-echo "Indexing BAM..."
-samtools index -@ "$threads" "$output_bam"
+samtools sort -@ "$threads" --write-index -o "${output_bam}##idx##${output_bam}.bai" "${output_bam}.unsorted.bam"
 
 # Cleanup temporary header file and filtered dictionary
 rm "${output_bam}.header.sam" "${output_bam}.filtered_dict.tsv" "${output_bam}.unsorted.bam"
