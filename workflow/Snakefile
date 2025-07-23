@@ -148,7 +148,7 @@ rule merge_individual_condition:
         fi
 
         # Check total reads in the resulting BAM file
-        total_reads=$(samtools view -c {output.bam})
+        total_reads=$(samtools view -@ {threads} -c {output.bam})
         echo "Total reads in merged BAM: $total_reads"
 
         # Downsampling if needed
@@ -157,7 +157,7 @@ rule merge_individual_condition:
             temp_downsampled_bam=$(mktemp)
             fraction=$(echo "scale=6; $downsample_reads / $total_reads" | bc)
             fraction=$(echo "$fraction" | sed 's/^0//')
-            samtools view -s 42$fraction -b {output.bam} > "$temp_downsampled_bam"
+            samtools view -@ {threads} -s 42$fraction -b {output.bam} > "$temp_downsampled_bam"
             mv "$temp_downsampled_bam" {output.bam}
             echo "Downsampling completed and replaced the original merged BAM."
         else
@@ -187,7 +187,7 @@ rule label_reads_with_condition:
 
         samtools view -@ {threads} -h {input.bam} | \
         awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}' | \
-        samtools view -bS - > {output.bam}
+        samtools view -@ {threads} -o {output.bam}
         """
 
 
@@ -195,6 +195,7 @@ rule align_sample:
     conda:
         "envs/env.yml"
     input:
+        ref=ancient(config["reference_genome"]),
         bam="merged/{individual}_{condition}_{label}_labeled.bam",
     output:
         aligned=temp("aligned/{individual}_{condition}_{label}_aligned.bam"),
@@ -204,8 +205,6 @@ rule align_sample:
     resources:
         runtime=930,
         mem_mb=76800,
-    params:
-        reference=config["reference_genome"],
     benchmark:
         "benchmark/align_samples/{individual}_{condition}_{label}.txt"
     shell:
@@ -213,7 +212,7 @@ rule align_sample:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        pbmm2 align {params.reference} {input.bam} {output.aligned} \
+        pbmm2 align {input.reference} {input.bam} {output.aligned} \
             --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
         """
 
@@ -239,7 +238,8 @@ rule modify_rg:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        samtools addreplacerg -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' \
+        samtools addreplacerg -@ {threads} \
+            -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' \
             -o {output.bam} {input.bam}##idx##{output.bai}
         """
 
