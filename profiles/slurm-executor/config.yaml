@@ -21,4 +21,3 @@ set-resources:
     slurm_partition: "cpu-g2"
   isoranker_analysis:
     slurm_partition: "cpu-g2"
-slurm_extra: "-o logs/slurm/%x-%j.out -e logs/slurm/%x-%j.err"
