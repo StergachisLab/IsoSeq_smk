@@ -2,6 +2,32 @@
 
 import os
 import gzip
+import os, shutil, pathlib, textwrap
+
+#  Node‑local scratch helpers
+SCRATCH_PREFIX = os.environ.get("TMPDIR", "/tmp")   # honors scheduler‑set $TMPDIR
+PROJECT_ROOT   = workflow.basedir                  # absolute path of repo
+
+def scratch(path):
+    """
+    Convert a project‑relative path (results/my.bam) to a scratch path
+    (/tmp/snakemake/results/my.bam) **without changing directory structure**.
+    """
+    return os.path.join(SCRATCH_PREFIX, "snakemake", os.path.relpath(path, PROJECT_ROOT))
+
+def stage_to_tmp(files, subdir):
+    """
+    Symlink every file in *files* into the scratch *subdir* and return the list
+    of symlink paths.  Idempotent—re‑running doesn’t recreate links.
+    """
+    os.makedirs(subdir, exist_ok=True)
+    staged = []
+    for f in files:
+        link = os.path.join(subdir, os.path.basename(f))
+        if not os.path.exists(link):
+            os.symlink(os.path.abspath(f), link)
+        staged.append(link)
+    return staged
 
 
 # Check if "deepvariant_vcf" exists for an individual
@@ -28,12 +54,17 @@ def get_vcf_path(wildcards):
 
 
 # Get input files for merging per label (safe)
-def get_merge_input(wc):
-    try:
-        return config["individuals"][wc.individual][wc.condition][wc.label]
-    except KeyError:
-        print(f"[WARNING] Skipping: {wc.individual} / {wc.condition} / {wc.label}")
-        return []
+def get_merge_input(wildcards):
+    raw_files = config["individuals"][wildcards.individual][wildcards.condition][wildcards.label]
+    return stage_to_tmp(
+        raw_files,
+        os.path.join(SCRATCH_PREFIX,
+                     "snakemake",
+                     "raw",
+                     wildcards.individual,
+                     wildcards.condition,
+                     wildcards.label)
+    )
 
 
 # Combine all aligned BAMs for an individual, if conditions/labels exist
