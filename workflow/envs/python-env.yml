@@ -13,3 +13,5 @@ dependencies:
   - pysam
   - matplotlib
   - seaborn
+  - sqlite
+
