@@ -596,16 +596,44 @@ rule pigeon_process:
         pigeon report pigeon/pigeon_classification.filtered_lite_classification.txt {output.report}
         """
 
+rule build_db:
+    conda:
+        "envs/python-env.yml"
+    input:
+        haplotag=get_haplotag_files,
+    output:
+        "tag/haplotags.db",
+    log:
+        "logs/build_db/duild_db.log",
+    benchmark:
+        "benchmark/build_db/duild_db.txt"
+    threads: config.get("threads", 4)
+    resources:
+        runtime=980,
+        mem_mb=374000,
+    shell:
+        """
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
+        sqlite3 {output} 'CREATE TABLE haplotags (read_id TEXT PRIMARY KEY, haplotype TEXT);'
+        for file in {input}; do
+            sqlite3 {output} '.mode tabs' '.import '\"$file\"' haplotags'
+        done
+        sqlite3 {output} 'CREATE INDEX idx_read ON haplotags(read_id);'
+        
+        """
+
 
 rule create_dictionary:
     conda:
-        "envs/r-base.yml"
+        "envs/python-env.yml"
     input:
         collapsed="collapse/collapsed.read_stat.txt",
-        haplotag=get_haplotag_files,
+        haplotag="tag/haplotags.db",
         classification="pigeon/pigeon_classification.txt",
     output:
-        "tag/dictionary.tsv.gz",
+        tsv="tag/dictionary.tsv.gz",
     log:
         "logs/create_dictionary/dictionary.log",
     benchmark:
@@ -615,13 +643,13 @@ rule create_dictionary:
         runtime=980,
         mem_mb=374000,
     params:
-        script=workflow.source_path("scripts/create_dictionary.R"),
+        script=workflow.source_path("scripts/create_dictionary.py"),
     shell:
         """
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        Rscript {params.script} {input.collapsed} whatshap/ {input.classification} {threads} tag
+        python {params.script} {input.collapsed} {input.haplotag_db} {input.classification_db} {output.tsv}        
         """
 
 
