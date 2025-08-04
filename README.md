@@ -29,8 +29,8 @@ associated_transcript (tn:Z:)
 subcategory (sb:Z:)
 isoform_haplotype_noncyclo_counts (hn:i:)
 isoform_haplotype_cyclo_counts (hc:i:)
-isoform_noncyclo_counts (sn:i:)
-isoform_cyclo_counts (sc:i:)
+isoform_noncyclo_counts (nc:i:)
+isoform_cyclo_counts (cc:i:)
 ```
 
 As an additional feature, we have integrated [Isoranker](https://github.com/yhhc2/IsoRanker) to perform statistical analyses on our sample set [last rule of the pipeline]. While this step is optional, it requires additional supporting documents to function correctly. We have provided the necessary files corresponding to our current `config.yaml` list of samples in the `docs/` folder.
@@ -87,3 +87,4 @@ nohup snakemake -s workflow/Snakefile \
 -p -k --verbose --retries=1 --rerun-incomplete \
 --directory results > nohup.capture
 ```
+
