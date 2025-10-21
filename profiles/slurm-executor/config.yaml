@@ -1,7 +1,7 @@
 executor: slurm
-jobs: 500
+jobs: 50
 latency-wait: 60
-max-jobs-per-second: 50
+max-jobs-per-second: 5
 default-resources:
   - disk_mb=8096
   - mem_mb=10000
@@ -21,3 +21,4 @@ set-resources:
     slurm_partition: "cpu-g2"
   isoranker_analysis:
     slurm_partition: "cpu-g2"
+
