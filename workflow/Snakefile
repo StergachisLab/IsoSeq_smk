@@ -410,7 +410,7 @@ rule cluster:
         clustered="clustered/{individual}_clustered.bam",
     threads: 20
     resources:
-        runtime=5760,
+        runtime=2880,
         mem_mb=102400,
     benchmark:
         "benchmark/cluster/{individual}_all_conditions.txt"
@@ -522,7 +522,7 @@ rule collapse:
         "logs/collapse/collapsed.log",
     threads: config.get("threads", 4)
     resources:
-        runtime=530,
+        runtime=930,
         mem_mb=20530,
     benchmark:
         "benchmark/collapse/collapse.txt"
@@ -657,7 +657,7 @@ rule qc_flnc:
     conda:
         "envs/python-env.yml"
     input:
-        bam="tag/{individual}_{condition}_{label}.tagged.bam",
+        bam="whatshap/{individual}_{condition}_{label}.haplotagged.bam",
     output:
         tsv="qc/{individual}_{condition}_{label}_qc_summary.tsv",
         plots_dir=directory("qc/{individual}_{condition}_{label}_plots"),

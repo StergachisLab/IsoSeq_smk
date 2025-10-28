@@ -1,0 +1,308 @@
+individuals:
+  UDN633333:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00115/hg38/results/pipelines/k-mer-variant-phasing/results/PS00115/hiphase/PS00115.vcf.gz
+    untreated:
+      non-cyclo_PS00344:
+      - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00344/m84036_230518_222043_s4/IsoSeqX_bc09_5p--IsoSeqX_3p/PS00344.m84036_230518_222043_s4.IsoSeqX_bc09_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00345:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00345/m84036_230519_205749_s1/IsoSeqX_bc10_5p--IsoSeqX_3p/PS00345.m84036_230519_205749_s1.IsoSeqX_bc10_5p--IsoSeqX_3p.flnc.bam
+  BCH_1877-01:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00389/hg38/results/pipelines/k-mer-variant-phasing/results/PS00389/PS00389.haplotagged.vcf.gz
+    treated:
+      cyclo_PS00390:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00390/m84046_231114_014002_s2/IsoSeqX_bc01_5p--IsoSeqX_3p/PS00390.m84046_231114_014002_s2.IsoSeqX_bc01_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00390/m84046_231124_091406_s4/IsoSeqX_bc01_5p--IsoSeqX_3p/PS00390.m84046_231124_091406_s4.IsoSeqX_bc01_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00390/m84046_231124_011453_s3/IsoSeqX_bc01_5p--IsoSeqX_3p/PS00390.m84046_231124_011453_s3.IsoSeqX_bc01_5p--IsoSeqX_3p.flnc.bam
+    untreated:
+      non-cyclo_PS00391:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00391/m84046_231114_014002_s2/IsoSeqX_bc02_5p--IsoSeqX_3p/PS00391.m84046_231114_014002_s2.IsoSeqX_bc02_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00391/m84046_231124_091406_s4/IsoSeqX_bc02_5p--IsoSeqX_3p/PS00391.m84046_231124_091406_s4.IsoSeqX_bc02_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00391/m84046_231124_011453_s3/IsoSeqX_bc02_5p--IsoSeqX_3p/PS00391.m84046_231124_011453_s3.IsoSeqX_bc02_5p--IsoSeqX_3p.flnc.bam
+  BCH_2410-01:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00392/hg38/results/pipelines/k-mer-variant-phasing/results/PS00392/PS00392.haplotagged.vcf.gz
+    treated:
+      cyclo_PS00393:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00393/m84046_231117_223025_s4/IsoSeqX_bc03_5p--IsoSeqX_3p/PS00393.m84046_231117_223025_s4.IsoSeqX_bc03_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00393/m84046_231120_235038_s1/IsoSeqX_bc03_5p--IsoSeqX_3p/PS00393.m84046_231120_235038_s1.IsoSeqX_bc03_5p--IsoSeqX_3p.flnc.bam
+    untreated:
+      non-cyclo_PS00394:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00394/m84046_231117_223025_s4/IsoSeqX_bc04_5p--IsoSeqX_3p/PS00394.m84046_231117_223025_s4.IsoSeqX_bc04_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00394/m84046_231120_235038_s1/IsoSeqX_bc04_5p--IsoSeqX_3p/PS00394.m84046_231120_235038_s1.IsoSeqX_bc04_5p--IsoSeqX_3p.flnc.bam
+  BCH_2275-01:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00395/hg38/results/pipelines/k-mer-variant-phasing/results/PS00395/hiphase/PS00395.vcf.gz
+    treated:
+      cyclo_PS00396:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00396/m84046_231123_133423_s1/IsoSeqX_bc05_5p--IsoSeqX_3p/PS00396.m84046_231123_133423_s1.IsoSeqX_bc05_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00396/m84046_231123_093332_s2/IsoSeqX_bc05_5p--IsoSeqX_3p/PS00396.m84046_231123_093332_s2.IsoSeqX_bc05_5p--IsoSeqX_3p.flnc.bam
+    untreated:
+      non-cyclo_PS00397:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00397/m84046_231123_133423_s1/IsoSeqX_bc06_5p--IsoSeqX_3p/PS00397.m84046_231123_133423_s1.IsoSeqX_bc06_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00397/m84046_231123_093332_s2/IsoSeqX_bc06_5p--IsoSeqX_3p/PS00397.m84046_231123_093332_s2.IsoSeqX_bc06_5p--IsoSeqX_3p.flnc.bam
+  BCH_2401-01:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00398/hg38/results/pipelines/k-mer-variant-phasing/results/PS00398/hiphase/PS00398.vcf.gz
+    treated:
+      cyclo_PS00399:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00399/m84046_240422_220151_s3/IsoSeqX_bc07_5p--IsoSeqX_3p/PS00399.m84046_240422_220151_s3.IsoSeqX_bc07_5p--IsoSeqX_3p.flnc.bam
+    untreated:
+      non-cyclo_PS00400:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00400/m84046_240422_220151_s3/IsoSeqX_bc08_5p--IsoSeqX_3p/PS00400.m84046_240422_220151_s3.IsoSeqX_bc08_5p--IsoSeqX_3p.flnc.bam
+  BCH_2443-01:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00401/hg38/results/pipelines/k-mer-variant-phasing/results/PS00401/hiphase/PS00401.vcf.gz
+    treated:
+      cyclo_PS00402:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00402/m84046_231114_043546_s3/IsoSeqX_bc09_5p--IsoSeqX_3p/PS00402.m84046_231114_043546_s3.IsoSeqX_bc09_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00402/m84046_231121_054828_s4/IsoSeqX_bc09_5p--IsoSeqX_3p/PS00402.m84046_231121_054828_s4.IsoSeqX_bc09_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00402/m84046_231121_034911_s3/IsoSeqX_bc09_5p--IsoSeqX_3p/PS00402.m84046_231121_034911_s3.IsoSeqX_bc09_5p--IsoSeqX_3p.flnc.bam
+    untreated:
+      non-cyclo_PS00403:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00403/m84046_231114_043546_s3/IsoSeqX_bc10_5p--IsoSeqX_3p/PS00403.m84046_231114_043546_s3.IsoSeqX_bc10_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00403/m84046_231121_054828_s4/IsoSeqX_bc10_5p--IsoSeqX_3p/PS00403.m84046_231121_054828_s4.IsoSeqX_bc10_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00403/m84046_231121_034911_s3/IsoSeqX_bc10_5p--IsoSeqX_3p/PS00403.m84046_231121_034911_s3.IsoSeqX_bc10_5p--IsoSeqX_3p.flnc.bam
+  BCH_0252-01:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00404/hg38/results/pipelines/k-mer-variant-phasing/results/PS00404/PS00404.haplotagged.vcf.gz
+    treated:
+      cyclo_PS00405:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00405/m84046_240324_145021_s1/IsoSeqX_bc11_5p--IsoSeqX_3p/PS00405.m84046_240324_145021_s1.IsoSeqX_bc11_5p--IsoSeqX_3p.flnc.bam
+    untreated:
+      non-cyclo_PS00406:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00406/m84046_240324_145021_s1/IsoSeqX_bc12_5p--IsoSeqX_3p/PS00406.m84046_240324_145021_s1.IsoSeqX_bc12_5p--IsoSeqX_3p.flnc.bam
+  BCH_1199-01:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00422/hg38/results/pipelines/k-mer-variant-phasing/results/PS00422/PS00422.haplotagged.vcf.gz
+    treated:
+      cyclo_PS00423:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00423/m84046_240324_145021_s1/IsoSeqX_bc01_5p--IsoSeqX_3p/PS00423.m84046_240324_145021_s1.IsoSeqX_bc01_5p--IsoSeqX_3p.flnc.bam
+    untreated:
+      non-cyclo_PS00424:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00424/m84046_240324_145021_s1/IsoSeqX_bc02_5p--IsoSeqX_3p/PS00424.m84046_240324_145021_s1.IsoSeqX_bc02_5p--IsoSeqX_3p.flnc.bam
+  BCH_1986-01:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00425/hg38/results/pipelines/k-mer-variant-phasing/results/PS00425/hiphase/PS00425.vcf.gz
+    treated:
+      cyclo_PS00426:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00426/m84046_240324_145021_s1/IsoSeqX_bc03_5p--IsoSeqX_3p/PS00426.m84046_240324_145021_s1.IsoSeqX_bc03_5p--IsoSeqX_3p.flnc.bam
+    untreated:
+      non-cyclo_PS00427:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00427/m84046_240324_145021_s1/IsoSeqX_bc04_5p--IsoSeqX_3p/PS00427.m84046_240324_145021_s1.IsoSeqX_bc04_5p--IsoSeqX_3p.flnc.bam
+  BCH_310-01:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00428/hg38/results/pipelines/k-mer-variant-phasing/results/PS00428/hiphase/PS00428.vcf.gz
+    treated:
+      cyclo_PS00429:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00429/m84046_240324_145021_s1/IsoSeqX_bc05_5p--IsoSeqX_3p/PS00429.m84046_240324_145021_s1.IsoSeqX_bc05_5p--IsoSeqX_3p.flnc.bam
+    untreated:
+      non-cyclo_PS00430:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00430/m84046_240324_145021_s1/IsoSeqX_bc06_5p--IsoSeqX_3p/PS00430.m84046_240324_145021_s1.IsoSeqX_bc06_5p--IsoSeqX_3p.flnc.bam
+  UDN052264:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00456/hg38/results/pipelines/k-mer-variant-phasing/results/PS00456/PS00456.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00366:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00366/m84046_230829_213454_s3/MAS_3p--10X_IsoSeqX_bc16_5p/PS00366.m84046_230829_213454_s3.MAS_3p--10X_IsoSeqX_bc16_5p.flnc.bam
+    treated:
+      cyclo_PS00367:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00367/m84046_230829_213454_s3/MAS_3p--10X_IsoSeqX_bc17_5p/PS00367.m84046_230829_213454_s3.MAS_3p--10X_IsoSeqX_bc17_5p.flnc.bam
+  UDN052264b:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00456/hg38/results/pipelines/k-mer-variant-phasing/results/PS00456/PS00456.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00457:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00457/m84046_240512_073311_s1/IsoSeqX_bc07_5p--IsoSeqX_3p/PS00457.m84046_240512_073311_s1.IsoSeqX_bc07_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00458:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00458/m84046_240512_073311_s1/IsoSeqX_bc09_5p--IsoSeqX_3p/PS00458.m84046_240512_073311_s1.IsoSeqX_bc09_5p--IsoSeqX_3p.flnc.bam
+  UDN374570:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00459/hg38/results/pipelines/k-mer-variant-phasing/results/PS00459/PS00459.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00460:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00460/m84046_240509_062343_s4/IsoSeqX_bc02_5p--IsoSeqX_3p/PS00460.m84046_240509_062343_s4.IsoSeqX_bc02_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00461:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00461/m84046_240509_062343_s4/IsoSeqX_bc07_5p--IsoSeqX_3p/PS00461.m84046_240509_062343_s4.IsoSeqX_bc07_5p--IsoSeqX_3p.flnc.bam
+  UDN827597:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00462/hg38/results/pipelines/k-mer-variant-phasing/results/PS00462/hiphase/PS00462.vcf.gz
+    untreated:
+      non-cyclo_PS00463:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00463/m84046_240726_030711_s2/IsoSeqX_bc03_5p--IsoSeqX_3p/PS00463.m84046_240726_030711_s2.IsoSeqX_bc03_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00463/m84046_240731_183507_s2/IsoSeqX_bc03_5p--IsoSeqX_3p/PS00463.m84046_240731_183507_s2.IsoSeqX_bc03_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00464:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00464/m84046_240726_030711_s2/IsoSeqX_bc10_5p--IsoSeqX_3p/PS00464.m84046_240726_030711_s2.IsoSeqX_bc10_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00464/m84046_240731_183507_s2/IsoSeqX_bc10_5p--IsoSeqX_3p/PS00464.m84046_240731_183507_s2.IsoSeqX_bc10_5p--IsoSeqX_3p.flnc.bam
+  UDN212054:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00465/hg38/results/pipelines/k-mer-variant-phasing/results/PS00465/PS00465.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00362:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00362/m84046_230829_213454_s3/MAS_3p--10X_IsoSeqX_bc03_5p/PS00362.m84046_230829_213454_s3.MAS_3p--10X_IsoSeqX_bc03_5p.flnc.bam
+    treated:
+      cyclo_PS00363:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00363/m84046_230829_213454_s3/MAS_3p--10X_IsoSeqX_bc04_5p/PS00363.m84046_230829_213454_s3.MAS_3p--10X_IsoSeqX_bc04_5p.flnc.bam
+  UDN212054b:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00465/hg38/results/pipelines/k-mer-variant-phasing/results/PS00465/PS00465.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00466:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00466/m84046_240512_073311_s1/IsoSeqX_bc06_5p--IsoSeqX_3p/PS00466.m84046_240512_073311_s1.IsoSeqX_bc06_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00467:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00467/m84046_240512_073311_s1/IsoSeqX_bc02_5p--IsoSeqX_3p/PS00467.m84046_240512_073311_s1.IsoSeqX_bc02_5p--IsoSeqX_3p.flnc.bam
+  UDN687128:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00468/hg38/results/pipelines/k-mer-variant-phasing/results/PS00468/PS00468.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00469:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00469/m84046_240509_062343_s4/IsoSeqX_bc09_5p--IsoSeqX_3p/PS00469.m84046_240509_062343_s4.IsoSeqX_bc09_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00470:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00470/m84046_240509_062343_s4/IsoSeqX_bc01_5p--IsoSeqX_3p/PS00470.m84046_240509_062343_s4.IsoSeqX_bc01_5p--IsoSeqX_3p.flnc.bam
+  UDN687128b:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00468/hg38/results/pipelines/k-mer-variant-phasing/results/PS00468/PS00468.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00554:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00554/m84036_230520_224945_s4/IsoSeqX_bc11_5p--IsoSeqX_3p/PS00554.m84036_230520_224945_s4.IsoSeqX_bc11_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00555:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00555/m84036_230521_213523_s1/IsoSeqX_bc12_5p--IsoSeqX_3p/PS00555.m84036_230521_213523_s1.IsoSeqX_bc12_5p--IsoSeqX_3p.flnc.bam
+  UDN355246:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00471/hg38/results/pipelines/k-mer-variant-phasing/results/PS00471/PS00471.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00472:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00472/m84046_240726_010724_s1/IsoSeqX_bc07_5p--IsoSeqX_3p/PS00472.m84046_240726_010724_s1.IsoSeqX_bc07_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00472/m84046_240731_163529_s1/IsoSeqX_bc07_5p--IsoSeqX_3p/PS00472.m84046_240731_163529_s1.IsoSeqX_bc07_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00473:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00473/m84046_240726_010724_s1/IsoSeqX_bc03_5p--IsoSeqX_3p/PS00473.m84046_240726_010724_s1.IsoSeqX_bc03_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00473/m84046_240731_163529_s1/IsoSeqX_bc03_5p--IsoSeqX_3p/PS00473.m84046_240731_163529_s1.IsoSeqX_bc03_5p--IsoSeqX_3p.flnc.bam
+  UDN966087:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00476/hg38/results/pipelines/k-mer-variant-phasing/results/PS00476/PS00476.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00477:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00477/m84046_240726_010724_s1/IsoSeqX_bc06_5p--IsoSeqX_3p/PS00477.m84046_240726_010724_s1.IsoSeqX_bc06_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00477/m84046_240731_163529_s1/IsoSeqX_bc06_5p--IsoSeqX_3p/PS00477.m84046_240731_163529_s1.IsoSeqX_bc06_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00478:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00478/m84046_240726_010724_s1/IsoSeqX_bc11_5p--IsoSeqX_3p/PS00478.m84046_240726_010724_s1.IsoSeqX_bc11_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00478/m84046_240731_163529_s1/IsoSeqX_bc11_5p--IsoSeqX_3p/PS00478.m84046_240731_163529_s1.IsoSeqX_bc11_5p--IsoSeqX_3p.flnc.bam
+  UDN305049:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00479/hg38/results/pipelines/k-mer-variant-phasing/results/PS00479/PS00479.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00480:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00480/m84046_240731_223404_s4/IsoSeqX_bc01_5p--IsoSeqX_3p/PS00480.m84046_240731_223404_s4.IsoSeqX_bc01_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00481:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00481/m84046_240731_223404_s4/IsoSeqX_bc06_5p--IsoSeqX_3p/PS00481.m84046_240731_223404_s4.IsoSeqX_bc06_5p--IsoSeqX_3p.flnc.bam
+  UDN121217:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00482/hg38/results/pipelines/k-mer-variant-phasing/results/PS00482/PS00482.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00483:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00483/m84046_240512_073311_s1/IsoSeqX_bc03_5p--IsoSeqX_3p/PS00483.m84046_240512_073311_s1.IsoSeqX_bc03_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00484:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00484/m84046_240512_073311_s1/IsoSeqX_bc11_5p--IsoSeqX_3p/PS00484.m84046_240512_073311_s1.IsoSeqX_bc11_5p--IsoSeqX_3p.flnc.bam
+  UDN204349:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00485/hg38/results/pipelines/k-mer-variant-phasing/results/PS00485/PS00485.haplotagged.vcf.gz
+    untreated:
+      non-cyclo_PS00486:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00486/m84046_240726_010724_s1/IsoSeqX_bc05_5p--IsoSeqX_3p/PS00486.m84046_240726_010724_s1.IsoSeqX_bc05_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00486/m84046_240731_163529_s1/IsoSeqX_bc05_5p--IsoSeqX_3p/PS00486.m84046_240731_163529_s1.IsoSeqX_bc05_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00487:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00487/m84046_240726_010724_s1/IsoSeqX_bc01_5p--IsoSeqX_3p/PS00487.m84046_240726_010724_s1.IsoSeqX_bc01_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00487/m84046_240731_163529_s1/IsoSeqX_bc01_5p--IsoSeqX_3p/PS00487.m84046_240731_163529_s1.IsoSeqX_bc01_5p--IsoSeqX_3p.flnc.bam
+  UDN178694:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00489/hg38/results/pipelines/k-mer-variant-phasing/results/PS00489/hiphase/PS00489.vcf.gz
+    untreated:
+      non-cyclo_PS00490:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00490/m84046_240512_073311_s1/IsoSeqX_bc04_5p--IsoSeqX_3p/PS00490.m84046_240512_073311_s1.IsoSeqX_bc04_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00491:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00491/m84046_240512_073311_s1/IsoSeqX_bc12_5p--IsoSeqX_3p/PS00491.m84046_240512_073311_s1.IsoSeqX_bc12_5p--IsoSeqX_3p.flnc.bam
+  UDN359892:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00492/hg38/results/pipelines/k-mer-variant-phasing/results/PS00492/hiphase/PS00492.vcf.gz
+    untreated:
+      non-cyclo_PS00493:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00493/m84046_240726_010724_s1/IsoSeqX_bc08_5p--IsoSeqX_3p/PS00493.m84046_240726_010724_s1.IsoSeqX_bc08_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00493/m84046_240731_163529_s1/IsoSeqX_bc08_5p--IsoSeqX_3p/PS00493.m84046_240731_163529_s1.IsoSeqX_bc08_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00494:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00494/m84046_240726_010724_s1/IsoSeqX_bc04_5p--IsoSeqX_3p/PS00494.m84046_240726_010724_s1.IsoSeqX_bc04_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00494/m84046_240731_163529_s1/IsoSeqX_bc04_5p--IsoSeqX_3p/PS00494.m84046_240731_163529_s1.IsoSeqX_bc04_5p--IsoSeqX_3p.flnc.bam
+  UDN010451:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00543/hg38/results/pipelines/k-mer-variant-phasing/results/PS00543/hiphase/PS00543.vcf.gz
+    untreated:
+      non-cyclo_PS00544:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00544/m84046_240726_030711_s2/IsoSeqX_bc02_5p--IsoSeqX_3p/PS00544.m84046_240726_030711_s2.IsoSeqX_bc02_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00544/m84046_240731_183507_s2/IsoSeqX_bc02_5p--IsoSeqX_3p/PS00544.m84046_240731_183507_s2.IsoSeqX_bc02_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00545:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00545/m84046_240726_030711_s2/IsoSeqX_bc08_5p--IsoSeqX_3p/PS00545.m84046_240726_030711_s2.IsoSeqX_bc08_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00545/m84046_240731_183507_s2/IsoSeqX_bc08_5p--IsoSeqX_3p/PS00545.m84046_240731_183507_s2.IsoSeqX_bc08_5p--IsoSeqX_3p.flnc.bam
+  UDN262407:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00589/hg38/results/pipelines/k-mer-variant-phasing/results/PS00589/hiphase/PS00589.vcf.gz
+    untreated:
+      non-cyclo_PS00590:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00590/m84046_240726_030711_s2/IsoSeqX_bc01_5p--IsoSeqX_3p/PS00590.m84046_240726_030711_s2.IsoSeqX_bc01_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00590/m84046_240731_183507_s2/IsoSeqX_bc01_5p--IsoSeqX_3p/PS00590.m84046_240731_183507_s2.IsoSeqX_bc01_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00591:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00591/m84046_240726_030711_s2/IsoSeqX_bc05_5p--IsoSeqX_3p/PS00591.m84046_240726_030711_s2.IsoSeqX_bc05_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00591/m84046_240731_183507_s2/IsoSeqX_bc05_5p--IsoSeqX_3p/PS00591.m84046_240731_183507_s2.IsoSeqX_bc05_5p--IsoSeqX_3p.flnc.bam
+  UDN924176:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00592/hg38/results/pipelines/k-mer-variant-phasing/results/PS00592/hiphase/PS00592.vcf.gz
+    untreated:
+      non-cyclo_PS00593:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00593/m84046_240726_030711_s2/IsoSeqX_bc04_5p--IsoSeqX_3p/PS00593.m84046_240726_030711_s2.IsoSeqX_bc04_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00593/m84046_240731_183507_s2/IsoSeqX_bc04_5p--IsoSeqX_3p/PS00593.m84046_240731_183507_s2.IsoSeqX_bc04_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00594:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00594/m84046_240726_030711_s2/IsoSeqX_bc06_5p--IsoSeqX_3p/PS00594.m84046_240726_030711_s2.IsoSeqX_bc06_5p--IsoSeqX_3p.flnc.bam
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00594/m84046_240731_183507_s2/IsoSeqX_bc06_5p--IsoSeqX_3p/PS00594.m84046_240731_183507_s2.IsoSeqX_bc06_5p--IsoSeqX_3p.flnc.bam
+  UDN310876:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00595/hg38/results/pipelines/k-mer-variant-phasing/results/PS00595/hiphase/PS00595.vcf.gz
+    untreated:
+      non-cyclo_PS00596:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00596/m84046_240731_203429_s3/IsoSeqX_bc02_5p--IsoSeqX_3p/PS00596.m84046_240731_203429_s3.IsoSeqX_bc02_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00597:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00597/m84046_240731_203429_s3/IsoSeqX_bc06_5p--IsoSeqX_3p/PS00597.m84046_240731_203429_s3.IsoSeqX_bc06_5p--IsoSeqX_3p.flnc.bam
+  UDN860070:
+    deepvariant_vcf:
+    untreated:
+      non-cyclo_PS00599:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00599/m84046_240731_203429_s3/IsoSeqX_bc05_5p--IsoSeqX_3p/PS00599.m84046_240731_203429_s3.IsoSeqX_bc05_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00600:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00600/m84046_240731_203429_s3/IsoSeqX_bc04_5p--IsoSeqX_3p/PS00600.m84046_240731_203429_s3.IsoSeqX_bc04_5p--IsoSeqX_3p.flnc.bam
+  UDN666440:
+    deepvariant_vcf: /mmfs1/gscratch/stergachislab/userprod/production/fibertools-pipeline/PacBio-Fiber-seq/PS00601/hg38/results/pipelines/k-mer-variant-phasing/results/PS00601/hiphase/PS00601.vcf.gz
+    untreated:
+      non-cyclo_PS00602:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00602/m84046_240731_223404_s4/IsoSeqX_bc04_5p--IsoSeqX_3p/PS00602.m84046_240731_223404_s4.IsoSeqX_bc04_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00603:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00603/m84046_240731_223404_s4/IsoSeqX_bc02_5p--IsoSeqX_3p/PS00603.m84046_240731_223404_s4.IsoSeqX_bc02_5p--IsoSeqX_3p.flnc.bam
+  UDN353099:
+    deepvariant_vcf:
+    untreated:
+      non-cyclo_PS00610:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00610/m84046_240731_203429_s3/IsoSeqX_bc03_5p--IsoSeqX_3p/PS00610.m84046_240731_203429_s3.IsoSeqX_bc03_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00611:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00611/m84046_240731_203429_s3/IsoSeqX_bc07_5p--IsoSeqX_3p/PS00611.m84046_240731_203429_s3.IsoSeqX_bc07_5p--IsoSeqX_3p.flnc.bam
+  UDN318336:
+    deepvariant_vcf: /gscratch/stergachislab/asedeno/data/Hank_MASseq/4-deepvariant/UDN318336.vcf
+    untreated:
+      non-cyclo_PS00449:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00449/m84046_240329_064709_s2/IsoSeqX_bc11_5p--IsoSeqX_3p/PS00449.m84046_240329_064709_s2.IsoSeqX_bc11_5p--IsoSeqX_3p.flnc.bam
+    treated:
+      cyclo_PS00450:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00450/m84046_240329_064709_s2/IsoSeqX_bc12_5p--IsoSeqX_3p/PS00450.m84046_240329_064709_s2.IsoSeqX_bc12_5p--IsoSeqX_3p.flnc.bam
+  UDN215640:
+    deepvariant_vcf:
+    untreated:
+      non-cyclo_PS00364:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00364/m84046_230829_213454_s3/MAS_3p--10X_IsoSeqX_bc08_5p/PS00364.m84046_230829_213454_s3.MAS_3p--10X_IsoSeqX_bc08_5p.flnc.bam
+    treated:
+      cyclo_PS00365:
+        - /mmfs1/gscratch/stergachislab/data-store/PacBio-Kinnex/PS00365/m84046_230829_213454_s3/MAS_3p--10X_IsoSeqX_bc09_5p/PS00365.m84046_230829_213454_s3.MAS_3p--10X_IsoSeqX_bc09_5p.flnc.bam
+reference_genome: /gscratch/stergachislab/assemblies/simple-names/hg38.fa
+pigeon_annot: /gscratch/stergachislab/asedeno/data/reference_files/gencode.v48.annotation.gtf
+docs_dir: /mmfs1/gscratch/stergachislab/asedeno/data/github/IsoSeq_smk/docs
+threads: 8
+max_reads: 999999999
+downsample_reads: 999999999
+run_isoranker: false
