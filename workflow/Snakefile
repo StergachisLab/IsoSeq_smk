@@ -657,7 +657,7 @@ rule qc_flnc:
     conda:
         "envs/python-env.yml"
     input:
-                bam="tag/{individual}_{condition}_{label}.tagged.bam",
+        bam="tag/{individual}_{condition}_{label}.tagged.bam",
     output:
         tsv="qc/{individual}_{condition}_{label}_qc_summary.tsv",
         plots_dir=directory("qc/{individual}_{condition}_{label}_plots"),
