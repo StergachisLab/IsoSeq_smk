@@ -1,7 +1,8 @@
 executor: slurm
-jobs: 50
+scheduler: greedy
+jobs: 12
 latency-wait: 60
-max-jobs-per-second: 5
+max-jobs-per-second: 8
 default-resources:
   - disk_mb=8096
   - mem_mb=10000
