@@ -567,7 +567,7 @@ rule pigeon_process:
         "envs/env2.yml"
     input:
         collapsed_gff="collapse/collapsed.gff",
-        collapsed_count="collapse/collapsed.flnc_count.txt",
+        collapsed_count="collapse/collapsed.abundance.txt",
         prepared_gtf="annotations/annotations.sorted.gtf",
         prepared_index="annotations/annotations.sorted.gtf.pgi",
     output:
