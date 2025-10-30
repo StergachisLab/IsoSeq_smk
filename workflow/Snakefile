@@ -589,7 +589,7 @@ rule pigeon_process:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        pigeon prepare {input.collapsed_gff} -o {output.sorted_gff}
+        pigeon sort {input.collapsed_gff} -o {output.sorted_gff}
         pigeon classify {output.sorted_gff} {input.prepared_gtf} {params.reference} \
             --flnc {input.collapsed_count} -d pigeon -o 'pigeon'
         pigeon filter {output.classification}
