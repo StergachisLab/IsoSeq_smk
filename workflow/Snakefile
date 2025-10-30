@@ -562,7 +562,7 @@ rule collapse:
         bai="aligned/all_individuals_aligned_merged.bam.bai",
     output:
         collapsed_gff="collapse/collapsed.gff",
-        collapsed_abundance="collapse/collapsed.abundance.txt",
+        collapsed_abundance="collapse/collapsed.flnc_count.txt",
         collapsed_readstat="collapse/collapsed.read_stat.txt",
         collapsed_count="collapse/collapsed.flnc_count.txt",
     log:
