@@ -571,7 +571,7 @@ rule pigeon_process:
         prepared_gtf="annotations/annotations.sorted.gtf",
         prepared_index="annotations/annotations.sorted.gtf.pgi",
     output:
-        sorted_gff="collapse/collapsed.sorted.gff",
+        sorted_gff="pigeon/sorted.gff",
         classification="pigeon/pigeon_classification.txt",
         report="pigeon/saturation.txt",
     log:
