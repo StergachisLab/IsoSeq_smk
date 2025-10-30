@@ -100,15 +100,11 @@ rule all:
         expand("qc/{individual}_{condition}_{label}_plots", zip, **combinations_dict),
         *(["collapse/collapsed.gff"] if combinations else []),
         *(["tag/dictionary.tsv.gz"] if combinations else []),
-        # prepared collapsed GFF replaces sorted.gff as an explicit product
         *(["pigeon/collapsed.prepared.gff"] if combinations else []),
         *(["pigeon/pigeon_classification.txt"] if combinations else []),
         *(isoranker_outputs if run_isoranker else []),
 
 
-######################################################################
-# 1) MERGE ONLY (keeps original rule name)
-######################################################################
 rule merge_individual_condition:
     conda:
         "envs/env.yml"
@@ -147,9 +143,6 @@ rule merge_individual_condition:
         """
 
 
-######################################################################
-# 2) (Optional) DOWNSAMPLE to EXACT N READS if total > max_reads
-######################################################################
 rule downsample_individual_condition:
     conda:
         "envs/env.yml"
@@ -562,7 +555,7 @@ rule collapse:
         bai="aligned/all_individuals_aligned_merged.bam.bai",
     output:
         collapsed_gff="collapse/collapsed.gff",
-        collapsed_abundance="collapse/collapsed.flnc_count.txt",
+        collapsed_abundance="collapse/collapsed.abundance.txt",
         collapsed_readstat="collapse/collapsed.read_stat.txt",
         collapsed_count="collapse/collapsed.flnc_count.txt",
     log:
@@ -581,10 +574,6 @@ rule collapse:
         isoseq collapse --num-threads {threads} {input.bam} {output.collapsed_gff}
         """
 
-
-######################################################################
-# PIGEON: prepare AFTER collapse for BOTH annot and collapsed GFF
-######################################################################
 rule pigeon_prepare_annot:
     conda:
         "envs/env2.yml"
