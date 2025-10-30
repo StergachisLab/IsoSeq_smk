@@ -45,12 +45,6 @@ for ind in individuals:
                     {"individual": ind, "condition": cond, "label": lbl}
                 )
 
-# Debug: show combinations being processed
-# print("Valid combinations to be processed:")
-# for comb in combinations:
-#    print(f"{comb['individual']} - {comb['condition']} - {comb['label']}")
-
-
 # Restrict the values wildcards can take
 wildcard_constraints:
     individual="|".join(individuals),
@@ -106,11 +100,15 @@ rule all:
         expand("qc/{individual}_{condition}_{label}_plots", zip, **combinations_dict),
         *(["collapse/collapsed.gff"] if combinations else []),
         *(["tag/dictionary.tsv.gz"] if combinations else []),
-        *(["pigeon/sorted.gff"] if combinations else []),
+        # prepared collapsed GFF replaces sorted.gff as an explicit product
+        *(["pigeon/collapsed.prepared.gff"] if combinations else []),
         *(["pigeon/pigeon_classification.txt"] if combinations else []),
         *(isoranker_outputs if run_isoranker else []),
 
 
+######################################################################
+# 1) MERGE ONLY (keeps original rule name)
+######################################################################
 rule merge_individual_condition:
     conda:
         "envs/env.yml"
@@ -124,6 +122,7 @@ rule merge_individual_condition:
     resources:
         runtime=930,
     params:
+        # keep same params available globally (unused here)
         max_reads=config["max_reads"],
         downsample_reads=config["downsample_reads"],
     benchmark:
@@ -132,9 +131,6 @@ rule merge_individual_condition:
         r"""
         exec &> >(tee -a {log})
         set -euo pipefail
-
-        max_reads={params.max_reads}
-        downsample_reads={params.downsample_reads}
 
         input_files=({input})
         num_files=${{#input_files[@]}}
@@ -147,21 +143,72 @@ rule merge_individual_condition:
             samtools merge -@ {threads} {output.bam} {input}
         fi
 
-        # Check total reads in the resulting BAM file
-        total_reads=$(samtools view -@ {threads} -c {output.bam})
-        echo "Total reads in merged BAM: $total_reads"
+        echo "Merged BAM written to {output.bam}"
+        """
 
-        # Downsampling if needed
-        if (( $total_reads > $max_reads )); then
-            echo "File {output.bam} has more than $max_reads reads ($total_reads). Downsampling to ~$downsample_reads reads..."
-            temp_downsampled_bam=$(mktemp)
-            fraction=$(echo "scale=6; $downsample_reads / $total_reads" | bc)
-            fraction=$(echo "$fraction" | sed 's/^0//')
-            samtools view -@ {threads} -s 42$fraction -b {output.bam} > "$temp_downsampled_bam"
-            mv "$temp_downsampled_bam" {output.bam}
-            echo "Downsampling completed and replaced the original merged BAM."
+
+######################################################################
+# 2) (Optional) DOWNSAMPLE to EXACT N READS if total > max_reads
+######################################################################
+rule downsample_individual_condition:
+    conda:
+        "envs/env.yml"
+    input:
+        bam="merged/{individual}_{condition}_{label}_merged.bam",
+    output:
+        bam="merged/{individual}_{condition}_{label}_merged_capped.bam",
+        bai="merged/{individual}_{condition}_{label}_merged_capped.bam.bai",
+    log:
+        "logs/downsample_individual_condition/{individual}_{condition}_{label}_downsample.log",
+    threads: config.get("threads", 8)
+    resources:
+        runtime=930,
+    params:
+        max_reads=config["max_reads"],           # threshold
+        downsample_reads=config["downsample_reads"],  # exact count to keep
+    benchmark:
+        "benchmark/downsample_individual_condition/{individual}_{condition}_{label}.txt"
+    shell:
+        r"""
+        exec &> >(tee -a {log})
+        set -euo pipefail
+
+        max_reads={params.max_reads}
+        keep_reads={params.downsample_reads}
+
+        echo "Counting total reads in {input.bam}..."
+        total_reads=$(samtools view -@ {threads} -c {input.bam})
+        echo "Total reads: $total_reads"
+
+        mkdir -p $(dirname {output.bam})
+        tmpdir=$(mktemp -d)
+        trap "rm -rf $tmpdir" EXIT
+
+        if (( total_reads > max_reads )); then
+            echo "Threshold ($max_reads) exceeded. Downsampling to exactly $keep_reads reads using QNAME list..."
+
+            # 1) grab all QNAMEs (one per record)
+            samtools view -@ {threads} {input.bam} | awk '{{print $1}}' > $tmpdir/all.qnames
+
+            # 2) randomly choose exactly keep_reads
+            shuf $tmpdir/all.qnames | head -n "$keep_reads" > $tmpdir/keep.qnames
+
+            # 3) extract those reads into a BAM (header preserved)
+            samtools view -@ {threads} -N $tmpdir/keep.qnames -b {input.bam} > {output.bam}
+
+            # 4) index
+            samtools index {output.bam} {output.bai}
+
+            kept=$(samtools view -@ {threads} -c {output.bam})
+            echo "Downsampling done. Kept reads: $kept"
+
+            if (( kept != keep_reads )); then
+                echo "WARNING: kept ($kept) != requested ($keep_reads). This can happen if QNAMEs are not unique or multi-mapped handling differs."
+            fi
         else
-            echo "File {output.bam} has less than $max_reads reads. No downsampling performed."
+            echo "Below or equal to threshold ($max_reads). No downsampling — copying through."
+            cp {input.bam} {output.bam}
+            samtools index {output.bam} {output.bai}
         fi
         """
 
@@ -170,7 +217,8 @@ rule label_reads_with_condition:
     conda:
         "envs/env.yml"
     input:
-        bam="merged/{individual}_{condition}_{label}_merged.bam",
+        # consume the capped BAM (either downsampled or passthrough copy)
+        bam="merged/{individual}_{condition}_{label}_merged_capped.bam",
     output:
         bam="merged/{individual}_{condition}_{label}_labeled.bam",
     log:
@@ -186,7 +234,7 @@ rule label_reads_with_condition:
         set -euo pipefail
 
         samtools view -@ {threads} -h {input.bam} | \
-        awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}' | \
+        awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}' | \
         samtools view -@ {threads} -o {output.bam}
         """
 
@@ -286,7 +334,6 @@ rule modify_vcf:
         set -euo pipefail
 
         if [[ "$(basename {input.vcf})" == *_empty.vcf.gz ]] || [ ! -s {input.vcf} ]; then
-            # No VCF provided, use dummy already created
             cp {input.vcf} {output.mod_vcf}
             tabix -p vcf {output.mod_vcf}
         else
@@ -472,7 +519,7 @@ rule label_transcripts:
 
         (
             samtools view -@ {threads} -h {input.bam} \
-            | awk -v id={wildcards.individual} 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}'
+            | awk -v id={wildcards.individual} 'BEGIN {{OFS="\\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}'
         ) | samtools view -@ {threads} -bS - > {output.bam}
         """
 
@@ -535,14 +582,20 @@ rule collapse:
         """
 
 
+######################################################################
+# PIGEON: prepare AFTER collapse for BOTH annot and collapsed GFF
+######################################################################
 rule pigeon_prepare_annot:
     conda:
         "envs/env2.yml"
     input:
         gtf=config["pigeon_annot"],
+        collapsed_gff="collapse/collapsed.gff",
     output:
         gtf="annotations/annotations.sorted.gtf",
         pgi="annotations/annotations.sorted.gtf.pgi",
+        prepared_collapsed="pigeon/collapsed.prepared.gff",
+        prepared_collapsed_pgi="pigeon/collapsed.prepared.gff.pgi",
     log:
         "logs/pigeon_prepare_annot/pigeon_prepare.log",
     benchmark:
@@ -552,13 +605,19 @@ rule pigeon_prepare_annot:
         exec &> >(tee -a {log})
         set -euo pipefail
 
+        mkdir -p annotations pigeon
+
+        # Prepare annotation GTF (handles gz or plain)
         if file {input.gtf} | grep -q 'gzip compressed'; then
             gunzip -c {input.gtf} > annotations/annotations.gtf
         else
             cp {input.gtf} annotations/annotations.gtf
         fi
+        pigeon prepare annotations/annotations.gtf
 
-        pigeon prepare annotations/annotations.gtf       
+        # Prepare collapsed GFF
+        cp {input.collapsed_gff} {output.prepared_collapsed}
+        pigeon prepare {output.prepared_collapsed}
         """
 
 
@@ -566,12 +625,12 @@ rule pigeon_process:
     conda:
         "envs/env2.yml"
     input:
-        collapsed_gff="collapse/collapsed.gff",
+        prepared_collapsed="pigeon/collapsed.prepared.gff",
         collapsed_count="collapse/collapsed.abundance.txt",
         prepared_gtf="annotations/annotations.sorted.gtf",
         prepared_index="annotations/annotations.sorted.gtf.pgi",
     output:
-        sorted_gff="pigeon/sorted.gff",
+        # we no longer produce sorted.gff; classification and report remain
         classification="pigeon/pigeon_classification.txt",
         report="pigeon/saturation.txt",
     log:
@@ -589,9 +648,11 @@ rule pigeon_process:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        pigeon sort {input.collapsed_gff} -o {output.sorted_gff}
-        pigeon classify {output.sorted_gff} {input.prepared_gtf} {params.reference} \
+        # Directly classify using the prepared collapsed GFF and prepared annotation
+        pigeon classify {input.prepared_collapsed} {input.prepared_gtf} {params.reference} \
             --flnc {input.collapsed_count} -d pigeon -o 'pigeon'
+
+        # Keep existing filter/report steps
         pigeon filter {output.classification}
         pigeon report pigeon/pigeon_classification.filtered_lite_classification.txt {output.report}
         """
