@@ -36,7 +36,7 @@ def get_merge_input(wc):
         return []
 
 
-# Combine all aligned BAMs for an individual, if conditions/labels exist
+# Combine all BAMs for an individual, if conditions/labels exist
 def combine_labels(wildcards):
     individual = wildcards.individual
     result = []
