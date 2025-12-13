@@ -571,7 +571,7 @@ rule collapse:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        isoseq collapse --num-threads {threads} {input.bam} {output.collapsed_gff}
+        isoseq collapse --do-not-collapse-extra-5exons --num-threads {threads} {input.bam} {output.collapsed_gff}
         """
 
 rule pigeon_prepare_annot:
