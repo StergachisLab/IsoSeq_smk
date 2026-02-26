@@ -6,6 +6,6 @@ channels:
 dependencies:
   - python
   - pbmm2
-  - isoseq=4.3
+  - isoseq>=4.3
   - pbpigeon
 
