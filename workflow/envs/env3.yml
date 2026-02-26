@@ -3,7 +3,7 @@ name: whatshap_env
 channels:
   - conda-forge
 dependencies:
-  - python=3.11
+  - python>=3.11
   - samtools>=1.21
   - pip
   - pip:
