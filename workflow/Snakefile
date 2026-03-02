@@ -596,17 +596,120 @@ rule pigeon_prepare_annot:
 
         mkdir -p annotations pigeon
 
-        # Prepare annotation GTF (handles gz or plain)
-        if file {input.gtf} | grep -q 'gzip compressed'; then
-            gunzip -c {input.gtf} > annotations/annotations.gtf
-        else
-            cp {input.gtf} annotations/annotations.gtf
-        fi
-        pigeon prepare annotations/annotations.gtf
+        raw_gtf="annotations/annotations.raw.gtf"
+        clean_gtf="annotations/annotations.clean.gtf"
+        reject_gtf="annotations/annotations.rejected.gtf"
 
-        # Prepare collapsed GFF
-        cp {input.collapsed_gff} {output.prepared_collapsed}
-        pigeon prepare {output.prepared_collapsed}
+        # get raw annotation
+        if file {input.gtf} | grep -q 'gzip compressed'; then
+            gunzip -c {input.gtf} > "$raw_gtf"
+        else
+            cp {input.gtf} "$raw_gtf"
+        fi
+
+        # clean GTF:
+        # - remove comments/blank lines
+        # - keep only gene/transcript/exon
+        # - require 9 columns
+        # - require gene_id + gene_name on gene
+        # - require gene_id + transcript_id + gene_name on transcript/exon
+        # - require exon to come after its transcript
+        awk -F'\t' -v OFS='\t' -v reject_file="$reject_gtf" '
+        function get_attr(attr, key,    x) {
+            if (match(attr, key " \"[^\"]+\"")) {
+                x = substr(attr, RSTART, RLENGTH)
+                sub(key " \"", "", x)
+                sub("\"$", "", x)
+                return x
+            }
+            return ""
+        }
+
+        function flush_block(    i) {
+            if (keep_block && n_tx > 0 && n_exon > 0) {
+                for (i = 1; i <= n; i++) print block[i]
+            }
+            n = 0
+            n_tx = 0
+            n_exon = 0
+            keep_block = 0
+            current_gid = ""
+            delete seen_tx
+        }
+
+        /^#/ || /^[[:space:]]*$/ { next }
+
+        NF != 9 {
+            print "BAD_NF\t" $0 >> reject_file
+            next
+        }
+
+        {
+            feature = $3
+            gid = get_attr($9, "gene_id")
+            tid = get_attr($9, "transcript_id")
+            gname = get_attr($9, "gene_name")
+
+            if (feature != "gene" && feature != "transcript" && feature != "exon") next
+            if ($4 !~ /^[0-9]+$/ || $5 !~ /^[0-9]+$/) next
+            if ($7 !~ /^[+-]$/) next
+
+            if (feature == "gene") {
+                flush_block()
+                if (gid != "" && gname != "") {
+                    keep_block = 1
+                    current_gid = gid
+                    block[++n] = $0
+                } else {
+                    print "BAD_GENE\t" $0 >> reject_file
+                }
+                next
+            }
+
+            if (!keep_block || gid != current_gid) {
+                print "ORPHAN_OR_MISMATCH\t" $0 >> reject_file
+                next
+            }
+
+            if (feature == "transcript") {
+                if (tid != "" && gname != "") {
+                    seen_tx[tid] = 1
+                    n_tx++
+                    block[++n] = $0
+                } else {
+                    print "BAD_TRANSCRIPT\t" $0 >> reject_file
+                }
+                next
+            }
+
+            if (feature == "exon") {
+                if (tid != "" && gname != "" && (tid in seen_tx)) {
+                    n_exon++
+                    block[++n] = $0
+                } else {
+                    print "BAD_EXON\t" $0 >> reject_file
+                }
+            }
+        }
+
+        END {
+            flush_block()
+        }
+        ' "$raw_gtf" > "$clean_gtf"
+
+        # prepare cleaned annotation
+        pigeon prepare "$clean_gtf"
+        mv annotations/annotations.clean.sorted.gtf {output.gtf}
+        mv annotations/annotations.clean.sorted.gtf.pgi {output.pgi}
+
+        # prepare collapsed gff
+        cp {input.collapsed_gff} pigeon/collapsed.prepared.gff
+        pigeon prepare pigeon/collapsed.prepared.gff
+        mv pigeon/collapsed.prepared.sorted.gff {output.prepared_collapsed}
+        mv pigeon/collapsed.prepared.sorted.gff.pgi {output.prepared_collapsed_pgi}
+
+        # cleanup temp side files
+        rm -f "$raw_gtf" "$clean_gtf" "$reject_gtf"
         """
 
 
