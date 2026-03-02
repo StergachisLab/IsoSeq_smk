@@ -580,12 +580,13 @@ rule pigeon_prepare_annot:
     input:
         gtf=config["pigeon_annot"],
         collapsed_gff="collapse/collapsed.gff",
-        cleaner="scripts/clean_pigeon_gtf.awk",
     output:
         gtf="annotations/annotations.sorted.gtf",
         pgi="annotations/annotations.sorted.gtf.pgi",
         prepared_collapsed="pigeon/collapsed.prepared.gff",
         prepared_collapsed_pgi="pigeon/collapsed.prepared.gff.pgi",
+    params:
+        script=workflow.source_path("scripts/clean_pigeon_gtf.awk"),
     log:
         "logs/pigeon_prepare_annot/pigeon_prepare.log",
     benchmark:
