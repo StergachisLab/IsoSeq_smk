@@ -607,7 +607,7 @@ rule pigeon_prepare_annot:
             cp {input.gtf} "$raw_gtf"
         fi
 
-        awk -f {input.cleaner} "$raw_gtf" > "$clean_gtf"
+        awk -f {params.script} "$raw_gtf" > "$clean_gtf"
 
         pigeon prepare "$clean_gtf"
         mv annotations/annotations.clean.sorted.gtf {output.gtf}
