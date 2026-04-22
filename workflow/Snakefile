@@ -157,8 +157,8 @@ rule downsample_individual_condition:
     resources:
         runtime=930,
     params:
-        max_reads=config["max_reads"],           # threshold
-        downsample_reads=config["downsample_reads"],  # exact count to keep
+        max_reads=int(config["max_reads"]),
+        downsample_reads=int(config["downsample_reads"]),
     benchmark:
         "benchmark/downsample_individual_condition/{individual}_{condition}_{label}.txt"
     shell:
@@ -173,35 +173,36 @@ rule downsample_individual_condition:
         total_reads=$(samtools view -@ {threads} -c {input.bam})
         echo "Total reads: $total_reads"
 
-        mkdir -p $(dirname {output.bam})
+        mkdir -p "$(dirname {output.bam})"
         tmpdir=$(mktemp -d)
-        trap "rm -rf $tmpdir" EXIT
+        trap 'rm -rf "$tmpdir"' EXIT
 
         if (( total_reads > max_reads )); then
             echo "Threshold ($max_reads) exceeded. Downsampling to exactly $keep_reads reads using QNAME list..."
 
             # 1) grab all QNAMEs (one per record)
-            samtools view -@ {threads} {input.bam} | awk '{{print $1}}' > $tmpdir/all.qnames
+            samtools view -@ {threads} {input.bam} | awk '{{print $1}}' > "$tmpdir/all.qnames"
 
-            # 2) randomly choose exactly keep_reads
-            shuf $tmpdir/all.qnames | head -n "$keep_reads" > $tmpdir/keep.qnames
+            # 2) randomly choose exactly keep_reads without pipefail/SIGPIPE issues
+            shuf -n "$keep_reads" "$tmpdir/all.qnames" > "$tmpdir/keep.qnames"
 
-            # 3) extract those reads into a BAM (header preserved)
-            samtools view -@ {threads} -N $tmpdir/keep.qnames -b {input.bam} > {output.bam}
+            # 3) extract those reads into a BAM
+            samtools view -@ {threads} -N "$tmpdir/keep.qnames" -b -o {output.bam} {input.bam}
 
             # 4) index
-            samtools index {output.bam} {output.bai}
+            samtools index -@ {threads} {output.bam} {output.bai}
 
             kept=$(samtools view -@ {threads} -c {output.bam})
             echo "Downsampling done. Kept reads: $kept"
 
             if (( kept != keep_reads )); then
-                echo "WARNING: kept ($kept) != requested ($keep_reads). This can happen if QNAMEs are not unique or multi-mapped handling differs."
+                echo "WARNING: kept ($kept) != requested ($keep_reads)."
+                echo "This suggests duplicate QNAMEs or another mismatch between selection and extraction."
             fi
         else
             echo "Below or equal to threshold ($max_reads). No downsampling — copying through."
             cp {input.bam} {output.bam}
-            samtools index {output.bam} {output.bai}
+            samtools index -@ {threads} {output.bam} {output.bai}
         fi
         """
 
