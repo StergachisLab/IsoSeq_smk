@@ -159,10 +159,10 @@ rule downsample_individual_condition:
     params:
         max_reads=int(config["max_reads"]),
         downsample_reads=int(config["downsample_reads"]),
-    benchmark:
-        "benchmark/downsample_individual_condition/{individual}_{condition}_{label}.txt"
-    shell:
-        """
+benchmark:
+    "benchmark/downsample_individual_condition/{individual}_{condition}_{label}.txt"
+shell:
+    r"""
     set -euo pipefail
     exec > >(tee -a {log}) 2>&1
 
@@ -210,19 +210,6 @@ rule downsample_individual_condition:
         mv "$tmp_bai" {output.bai}
     fi
     """
-
-Main changes:
-
-Replaced shuf | head with shuf -n, avoiding exit code 141.
-Avoids storing all.qnames, which saves disk and time.
-Uses temporary output BAM/BAI, then mv, so failed jobs do not leave partial final outputs.
-Quotes tmpdir paths.
-Fixes the corrupted No downsampling — copying through text.
-Fixes the truncated warning string.
-
-One important caveat: this samples QNAMEs, not guaranteed unique reads. If QNAMEs are duplicated, samtools view -N may keep more records than requested.
-        """
-
 
 rule label_reads_with_condition:
     conda:
