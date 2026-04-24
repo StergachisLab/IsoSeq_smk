@@ -143,68 +143,57 @@ rule merge_individual_condition:
         """
 
 
-rule downsample_individual_condition:
-    conda:
-        "envs/env.yml"
-    input:
-        bam="merged/{individual}_{condition}_{label}_merged.bam",
-    output:
-        bam="merged/{individual}_{condition}_{label}_merged_capped.bam",
-        bai="merged/{individual}_{condition}_{label}_merged_capped.bam.bai",
-    log:
-        "logs/downsample_individual_condition/{individual}_{condition}_{label}_downsample.log",
-    threads: config.get("threads", 8)
-    resources:
-        runtime=930,
-    params:
-        max_reads=int(config["max_reads"]),
-        downsample_reads=int(config["downsample_reads"]),
-    benchmark:
-        "benchmark/downsample_individual_condition/{individual}_{condition}_{label}.txt"
-    shell:
-        r"""
-        exec &> >(tee -a {log})
-        set -euo pipefail
+benchmark:
+    "benchmark/downsample_individual_condition/{individual}_{condition}_{label}.txt"
+shell:
+    r"""
+    set -euo pipefail
+    exec > >(tee -a {log}) 2>&1
 
-        max_reads={params.max_reads}
-        keep_reads={params.downsample_reads}
+    max_reads={params.max_reads}
+    keep_reads={params.downsample_reads}
 
-        echo "Counting total reads in {input.bam}..."
-        total_reads=$(samtools view -@ {threads} -c {input.bam})
-        echo "Total reads: $total_reads"
+    echo "Counting total reads in {input.bam}..."
+    total_reads=$(samtools view -@ {threads} -c {input.bam})
+    echo "Total reads: $total_reads"
 
-        mkdir -p "$(dirname {output.bam})"
-        tmpdir=$(mktemp -d)
-        trap 'rm -rf "$tmpdir"' EXIT
+    mkdir -p "$(dirname {output.bam})"
+    tmpdir=$(mktemp -d)
+    trap 'rm -rf "$tmpdir"' EXIT
 
-        if (( total_reads > max_reads )); then
-            echo "Threshold ($max_reads) exceeded. Downsampling to exactly $keep_reads reads using QNAME list..."
+    tmp_bam="{output.bam}.tmp"
+    tmp_bai="{output.bai}.tmp"
 
-            # 1) grab all QNAMEs (one per record)
-            samtools view -@ {threads} {input.bam} | awk '{{print $1}}' > "$tmpdir/all.qnames"
+    if (( total_reads > max_reads )); then
+        echo "Threshold ($max_reads) exceeded. Downsampling to $keep_reads QNAMEs..."
 
-            # 2) randomly choose exactly keep_reads without pipefail/SIGPIPE issues
-            shuf -n "$keep_reads" "$tmpdir/all.qnames" > "$tmpdir/keep.qnames"
+        samtools view -@ {threads} {input.bam} \
+            | awk '{{print $1}}' \
+            | shuf -n "$keep_reads" \
+            > "$tmpdir/keep.qnames"
 
-            # 3) extract those reads into a BAM
-            samtools view -@ {threads} -N "$tmpdir/keep.qnames" -b -o {output.bam} {input.bam}
+        samtools view -@ {threads} -N "$tmpdir/keep.qnames" -b {input.bam} > "$tmp_bam"
+        samtools index "$tmp_bam" "$tmp_bai"
 
-            # 4) index
-            samtools index -@ {threads} {output.bam} {output.bai}
+        mv "$tmp_bam" {output.bam}
+        mv "$tmp_bai" {output.bai}
 
-            kept=$(samtools view -@ {threads} -c {output.bam})
-            echo "Downsampling done. Kept reads: $kept"
+        kept=$(samtools view -@ {threads} -c {output.bam})
+        echo "Downsampling done. Kept records: $kept"
 
-            if (( kept != keep_reads )); then
-                echo "WARNING: kept ($kept) != requested ($keep_reads)."
-                echo "This suggests duplicate QNAMEs or another mismatch between selection and extraction."
-            fi
-        else
-            echo "Below or equal to threshold ($max_reads). No downsampling — copying through."
-            cp {input.bam} {output.bam}
-            samtools index -@ {threads} {output.bam} {output.bai}
+        if (( kept != keep_reads )); then
+            echo "WARNING: kept ($kept) != requested ($keep_reads). This can happen if QNAMEs are duplicated or multi-mapped."
         fi
-        """
+    else
+        echo "Below or equal to threshold ($max_reads). No downsampling; copying through."
+
+        cp {input.bam} "$tmp_bam"
+        samtools index "$tmp_bam" "$tmp_bai"
+
+        mv "$tmp_bam" {output.bam}
+        mv "$tmp_bai" {output.bai}
+    fi
+    """
 
 
 rule label_reads_with_condition:
