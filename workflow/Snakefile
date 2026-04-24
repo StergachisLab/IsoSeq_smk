@@ -143,10 +143,26 @@ rule merge_individual_condition:
         """
 
 
-benchmark:
-    "benchmark/downsample_individual_condition/{individual}_{condition}_{label}.txt"
-shell:
-    r"""
+rule downsample_individual_condition:
+    conda:
+        "envs/env.yml"
+    input:
+        bam="merged/{individual}_{condition}_{label}_merged.bam",
+    output:
+        bam="merged/{individual}_{condition}_{label}_merged_capped.bam",
+        bai="merged/{individual}_{condition}_{label}_merged_capped.bam.bai",
+    log:
+        "logs/downsample_individual_condition/{individual}_{condition}_{label}_downsample.log",
+    threads: config.get("threads", 8)
+    resources:
+        runtime=930,
+    params:
+        max_reads=int(config["max_reads"]),
+        downsample_reads=int(config["downsample_reads"]),
+    benchmark:
+        "benchmark/downsample_individual_condition/{individual}_{condition}_{label}.txt"
+    shell:
+        """
     set -euo pipefail
     exec > >(tee -a {log}) 2>&1
 
@@ -194,6 +210,18 @@ shell:
         mv "$tmp_bai" {output.bai}
     fi
     """
+
+Main changes:
+
+Replaced shuf | head with shuf -n, avoiding exit code 141.
+Avoids storing all.qnames, which saves disk and time.
+Uses temporary output BAM/BAI, then mv, so failed jobs do not leave partial final outputs.
+Quotes tmpdir paths.
+Fixes the corrupted No downsampling — copying through text.
+Fixes the truncated warning string.
+
+One important caveat: this samples QNAMEs, not guaranteed unique reads. If QNAMEs are duplicated, samtools view -N may keep more records than requested.
+        """
 
 
 rule label_reads_with_condition:
