@@ -142,7 +142,6 @@ rule merge_individual_condition:
         echo "Merged BAM written to {output.bam}"
         """
 
-
 rule downsample_individual_condition:
     conda:
         "envs/env.yml"
@@ -159,57 +158,57 @@ rule downsample_individual_condition:
     params:
         max_reads=int(config["max_reads"]),
         downsample_reads=int(config["downsample_reads"]),
-benchmark:
-    "benchmark/downsample_individual_condition/{individual}_{condition}_{label}.txt"
-shell:
-    r"""
-    set -euo pipefail
-    exec > >(tee -a {log}) 2>&1
+    benchmark:
+        "benchmark/downsample_individual_condition/{individual}_{condition}_{label}.txt"
+    shell:
+        r"""
+        set -euo pipefail
+        exec > >(tee -a {log}) 2>&1
 
-    max_reads={params.max_reads}
-    keep_reads={params.downsample_reads}
+        max_reads={params.max_reads}
+        keep_reads={params.downsample_reads}
 
-    echo "Counting total reads in {input.bam}..."
-    total_reads=$(samtools view -@ {threads} -c {input.bam})
-    echo "Total reads: $total_reads"
+        echo "Counting total reads in {input.bam}..."
+        total_reads=$(samtools view -@ {threads} -c {input.bam})
+        echo "Total reads: $total_reads"
 
-    mkdir -p "$(dirname {output.bam})"
-    tmpdir=$(mktemp -d)
-    trap 'rm -rf "$tmpdir"' EXIT
+        mkdir -p "$(dirname {output.bam})"
+        tmpdir=$(mktemp -d)
+        trap 'rm -rf "$tmpdir"' EXIT
 
-    tmp_bam="{output.bam}.tmp"
-    tmp_bai="{output.bai}.tmp"
+        tmp_bam="{output.bam}.tmp"
+        tmp_bai="{output.bai}.tmp"
 
-    if (( total_reads > max_reads )); then
-        echo "Threshold ($max_reads) exceeded. Downsampling to $keep_reads QNAMEs..."
+        if (( total_reads > max_reads )); then
+            echo "Threshold ($max_reads) exceeded. Downsampling to $keep_reads QNAMEs..."
 
-        samtools view -@ {threads} {input.bam} \
-            | awk '{{print $1}}' \
-            | shuf -n "$keep_reads" \
-            > "$tmpdir/keep.qnames"
+            samtools view -@ {threads} {input.bam} \
+                | awk '{{print $1}}' \
+                | shuf -n "$keep_reads" \
+                > "$tmpdir/keep.qnames"
 
-        samtools view -@ {threads} -N "$tmpdir/keep.qnames" -b {input.bam} > "$tmp_bam"
-        samtools index "$tmp_bam" "$tmp_bai"
+            samtools view -@ {threads} -N "$tmpdir/keep.qnames" -b {input.bam} > "$tmp_bam"
+            samtools index "$tmp_bam" "$tmp_bai"
 
-        mv "$tmp_bam" {output.bam}
-        mv "$tmp_bai" {output.bai}
+            mv "$tmp_bam" {output.bam}
+            mv "$tmp_bai" {output.bai}
 
-        kept=$(samtools view -@ {threads} -c {output.bam})
-        echo "Downsampling done. Kept records: $kept"
+            kept=$(samtools view -@ {threads} -c {output.bam})
+            echo "Downsampling done. Kept records: $kept"
 
-        if (( kept != keep_reads )); then
-            echo "WARNING: kept ($kept) != requested ($keep_reads). This can happen if QNAMEs are duplicated or multi-mapped."
+            if (( kept != keep_reads )); then
+                echo "WARNING: kept ($kept) != requested ($keep_reads). This can happen if QNAMEs are duplicated or multi-mapped."
+            fi
+        else
+            echo "Below or equal to threshold ($max_reads). No downsampling; copying through."
+
+            cp {input.bam} "$tmp_bam"
+            samtools index "$tmp_bam" "$tmp_bai"
+
+            mv "$tmp_bam" {output.bam}
+            mv "$tmp_bai" {output.bai}
         fi
-    else
-        echo "Below or equal to threshold ($max_reads). No downsampling; copying through."
-
-        cp {input.bam} "$tmp_bam"
-        samtools index "$tmp_bam" "$tmp_bai"
-
-        mv "$tmp_bam" {output.bam}
-        mv "$tmp_bai" {output.bai}
-    fi
-    """
+        """
 
 rule label_reads_with_condition:
     conda:
