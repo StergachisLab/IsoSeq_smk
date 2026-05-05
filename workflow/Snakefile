@@ -10,6 +10,13 @@ configfile: os.environ.get("SNAKEMAKE_CONFIG", "config/github.config.yaml")
 run_isoranker = config.get("run_isoranker", False)
 output_dir = config.get("output_dir", "Output")
 
+# Local scratch base.
+# Prefer config["tmp_dir"] if provided, otherwise use $TMPDIR, otherwise /tmp.
+# Example:
+#   export TMPDIR=/lscratch/$SLURM_JOB_ID
+#   snakemake --use-conda --cores ...
+tmp_base = config.get("tmp_dir", os.environ.get("TMPDIR", "/tmp"))
+
 # List of all individuals from the configuration file
 individuals = config["individuals"].keys()
 
@@ -118,9 +125,9 @@ rule merge_individual_condition:
     resources:
         runtime=930,
     params:
-        # keep same params available globally (unused here)
         max_reads=config["max_reads"],
         downsample_reads=config["downsample_reads"],
+        tmp_base=tmp_base,
     benchmark:
         "benchmark/merge_individual_condition/{individual}_{condition}_{label}.txt"
     shell:
@@ -128,19 +135,29 @@ rule merge_individual_condition:
         exec &> >(tee -a {log})
         set -euo pipefail
 
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.merge_individual_condition.{wildcards.individual}.{wildcards.condition}.{wildcards.label}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_bam="$tmpdir/merged.bam"
+
         input_files=({input})
         num_files=${{#input_files[@]}}
 
         if [ $num_files -eq 1 ]; then
-            # Only one file, just copy it
-            cp {input} {output.bam}
+            cp {input} "$tmp_bam"
         else
-            # Merge multiple files
-            samtools merge -@ {threads} {output.bam} {input}
+            samtools merge -@ {threads} "$tmp_bam" {input}
         fi
+
+        samtools quickcheck "$tmp_bam"
+
+        mkdir -p "$(dirname {output.bam})"
+        mv "$tmp_bam" {output.bam}
 
         echo "Merged BAM written to {output.bam}"
         """
+
 
 rule downsample_individual_condition:
     conda:
@@ -158,6 +175,7 @@ rule downsample_individual_condition:
     params:
         max_reads=int(config["max_reads"]),
         downsample_reads=int(config["downsample_reads"]),
+        tmp_base=tmp_base,
     benchmark:
         "benchmark/downsample_individual_condition/{individual}_{condition}_{label}.txt"
     shell:
@@ -165,19 +183,19 @@ rule downsample_individual_condition:
         set -euo pipefail
         exec > >(tee -a {log}) 2>&1
 
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.downsample_individual_condition.{wildcards.individual}.{wildcards.condition}.{wildcards.label}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_bam="$tmpdir/merged_capped.bam"
+        tmp_bai="$tmpdir/merged_capped.bam.bai"
+
         max_reads={params.max_reads}
         keep_reads={params.downsample_reads}
 
         echo "Counting total reads in {input.bam}..."
         total_reads=$(samtools view -@ {threads} -c {input.bam})
         echo "Total reads: $total_reads"
-
-        mkdir -p "$(dirname {output.bam})"
-        tmpdir=$(mktemp -d)
-        trap 'rm -rf "$tmpdir"' EXIT
-
-        tmp_bam="{output.bam}.tmp"
-        tmp_bai="{output.bai}.tmp"
 
         if (( total_reads > max_reads )); then
             echo "Threshold ($max_reads) exceeded. Downsampling to $keep_reads QNAMEs..."
@@ -188,12 +206,9 @@ rule downsample_individual_condition:
                 > "$tmpdir/keep.qnames"
 
             samtools view -@ {threads} -N "$tmpdir/keep.qnames" -b {input.bam} > "$tmp_bam"
-            samtools index "$tmp_bam" "$tmp_bai"
+            samtools index -@ {threads} "$tmp_bam" "$tmp_bai"
 
-            mv "$tmp_bam" {output.bam}
-            mv "$tmp_bai" {output.bai}
-
-            kept=$(samtools view -@ {threads} -c {output.bam})
+            kept=$(samtools view -@ {threads} -c "$tmp_bam")
             echo "Downsampling done. Kept records: $kept"
 
             if (( kept != keep_reads )); then
@@ -203,18 +218,21 @@ rule downsample_individual_condition:
             echo "Below or equal to threshold ($max_reads). No downsampling; copying through."
 
             cp {input.bam} "$tmp_bam"
-            samtools index "$tmp_bam" "$tmp_bai"
-
-            mv "$tmp_bam" {output.bam}
-            mv "$tmp_bai" {output.bai}
+            samtools index -@ {threads} "$tmp_bam" "$tmp_bai"
         fi
+
+        samtools quickcheck "$tmp_bam"
+
+        mkdir -p "$(dirname {output.bam})"
+        mv "$tmp_bam" {output.bam}
+        mv "$tmp_bai" {output.bai}
         """
+
 
 rule label_reads_with_condition:
     conda:
         "envs/env.yml"
     input:
-        # consume the capped BAM (either downsampled or passthrough copy)
         bam="merged/{individual}_{condition}_{label}_merged_capped.bam",
     output:
         bam="merged/{individual}_{condition}_{label}_labeled.bam",
@@ -225,14 +243,27 @@ rule label_reads_with_condition:
     threads: config.get("threads", 4)
     resources:
         runtime=930,
+    params:
+        tmp_base=tmp_base,
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.label_reads_with_condition.{wildcards.individual}.{wildcards.condition}.{wildcards.label}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_bam="$tmpdir/labeled.bam"
+
         samtools view -@ {threads} -h {input.bam} | \
-        awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}' | \
-        samtools view -@ {threads} -o {output.bam}
+        awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}' | \
+        samtools view -@ {threads} -bS -o "$tmp_bam"
+
+        samtools quickcheck "$tmp_bam"
+
+        mkdir -p "$(dirname {output.bam})"
+        mv "$tmp_bam" {output.bam}
         """
 
 
@@ -253,14 +284,30 @@ rule align_sample:
         mem_mb=76800,
     benchmark:
         "benchmark/align_samples/{individual}_{condition}_{label}.txt"
+    params:
+        tmp_base=tmp_base,
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.align_sample.{wildcards.individual}.{wildcards.condition}.{wildcards.label}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_bam="$tmpdir/aligned.bam"
+        tmp_bai="$tmpdir/aligned.bam.bai"
+
         pbmm2 align \
             --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO \
-            {input.reference} {input.bam} {output.aligned} 
+            {input.reference} {input.bam} "$tmp_bam"
+
+        samtools index -@ {threads} "$tmp_bam" "$tmp_bai"
+        samtools quickcheck "$tmp_bam"
+
+        mkdir -p "$(dirname {output.aligned})"
+        mv "$tmp_bam" {output.aligned}
+        mv "$tmp_bai" {output.bai}
         """
 
 
@@ -280,15 +327,30 @@ rule modify_rg:
         "benchmark/modify_rg/{individual}_{condition}_{label}_rg.txt"
     resources:
         runtime=530,
+    params:
+        tmp_base=tmp_base,
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.modify_rg.{wildcards.individual}.{wildcards.condition}.{wildcards.label}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_bam="$tmpdir/modified_aligned.bam"
+        tmp_bai="$tmpdir/modified_aligned.bam.bai"
+
         samtools addreplacerg -@ {threads} \
-            -r '@RG\\tID:rg1\\tSM:UnnamedSample\\tLB:lib1\\tPL:PACBIO' \
-            --write-index -o {output.bam}##idx##{output.bai} \
+            -r '@RG\tID:rg1\tSM:UnnamedSample\tLB:lib1\tPL:PACBIO' \
+            --write-index -o "$tmp_bam##idx##$tmp_bai" \
             {input.bam}
+
+        samtools quickcheck "$tmp_bam"
+
+        mkdir -p "$(dirname {output.bam})"
+        mv "$tmp_bam" {output.bam}
+        mv "$tmp_bai" {output.bai}
         """
 
 
@@ -299,16 +361,26 @@ rule create_dummy_vcf:
         "mod_vcf/{individual}_empty.vcf.gz",
     log:
         "logs/create_dummy_vcf/{individual}_empty.log",
+    params:
+        tmp_base=tmp_base,
     shell:
         r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        mkdir -p $(dirname {output})
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.create_dummy_vcf.{wildcards.individual}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_vcf="$tmpdir/empty.vcf.gz"
+
         (
             echo "##fileformat=VCFv4.2"
             printf "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tUnnamedSample\n"
-        ) | bgzip -c > {output}
+        ) | bgzip -c > "$tmp_vcf"
+
+        mkdir -p "$(dirname {output})"
+        mv "$tmp_vcf" {output}
         """
 
 
@@ -325,21 +397,35 @@ rule modify_vcf:
     threads: config.get("threads", 2)
     benchmark:
         "benchmark/modify_vcf/{individual}_mod_vcf.txt"
+    params:
+        tmp_base=tmp_base,
     shell:
         r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.modify_vcf.{wildcards.individual}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_vcf="$tmpdir/mod.vcf.gz"
+        tmp_tbi="$tmpdir/mod.vcf.gz.tbi"
+
         if [[ "$(basename {input.vcf})" == *_empty.vcf.gz ]] || [ ! -s {input.vcf} ]; then
-            cp {input.vcf} {output.mod_vcf}
-            tabix -p vcf {output.mod_vcf}
+            cp {input.vcf} "$tmp_vcf"
+            tabix -p vcf "$tmp_vcf"
         else
             (zcat {input.vcf} 2>/dev/null || cat {input.vcf}) \
             | bcftools view \
             | awk 'BEGIN {{FS=OFS="\t"}} /^#CHROM/ {{$10="UnnamedSample"; print; next}} {{print}}' \
-            | bgzip -@ {threads} -c > {output.mod_vcf} && \
-            tabix -p vcf {output.mod_vcf}
+            | bgzip -@ {threads} -c > "$tmp_vcf"
+
+            tabix -p vcf "$tmp_vcf"
         fi
+
+        mkdir -p "$(dirname {output.mod_vcf})"
+        mv "$tmp_vcf" {output.mod_vcf}
+        mv "$tmp_tbi" {output.mod_vcf_tbi}
         """
 
 
@@ -360,28 +446,40 @@ rule whatshap_haplotag:
         "logs/whatshap_haplotag/{individual}_{condition}_{label}.haplotag.log",
     params:
         script=workflow.source_path("scripts/add_hp0.py"),
+        tmp_base=tmp_base,
     benchmark:
         "benchmark/whatshap/{individual}_{condition}_{label}_haplotag.txt"
     shell:
-        """
+        r"""
         exec > >(tee -a {log}) 2>&1
         set -euo pipefail
         set -x
 
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.whatshap_haplotag.{wildcards.individual}.{wildcards.condition}.{wildcards.label}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_bam="$tmpdir/haplotagged.bam"
+        tmp_list="$tmpdir/list.txt"
+
         if [ $(zcat {input.phased_vcf_gz} | grep -vc '^#') -gt 0 ]; then
             echo "Variants found. Running whatshap haplotag."
             whatshap haplotag {input.phased_vcf_gz} {input.bam} \
-                -o {output.haplotagged_bam} --reference {input.reference} \
-                --output-haplotag-list {output.list_txt}
+                -o "$tmp_bam" --reference {input.reference} \
+                --output-haplotag-list "$tmp_list"
         else
-            echo "No variants found or condition failed. Running add_hp0.sh."
-            python {params.script} {input.bam} {output.haplotagged_bam}
-            echo -e "#readname\thaplotype\tphaseset\tchromosome" > {output.list_txt}
+            echo "No variants found or condition failed. Running add_hp0.py."
+            python {params.script} {input.bam} "$tmp_bam"
+            echo -e "#readname\thaplotype\tphaseset\tchromosome" > "$tmp_list"
         fi
 
         echo "Validating output BAM..."
-        samtools quickcheck {output.haplotagged_bam} || \
+        samtools quickcheck "$tmp_bam" || \
             (echo "ERROR: Output BAM failed validation!" && exit 1)
+
+        mkdir -p "$(dirname {output.haplotagged_bam})"
+        mv "$tmp_bam" {output.haplotagged_bam}
+        mv "$tmp_list" {output.list_txt}
         """
 
 
@@ -400,45 +498,66 @@ rule extract_read_info:
         runtime=530,
     params:
         script=workflow.source_path("scripts/extract_read_info.py"),
+        tmp_base=tmp_base,
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        python {params.script} {input.bam} {output.txt}
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.extract_read_info.{wildcards.individual}.{wildcards.condition}.{wildcards.label}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_txt="$tmpdir/haplotagged.txt"
+
+        python {params.script} {input.bam} "$tmp_txt"
+
+        mkdir -p "$(dirname {output.txt})"
+        mv "$tmp_txt" {output.txt}
         """
 
 
-rule merge_samples:
+rule create_cluster_fofn:
     conda:
         "envs/env.yml"
     input:
         bam=combine_labels,
     output:
-        bam="merged/{individual}_all_conditions_merged.bam",
-        bai="merged/{individual}_all_conditions_merged.bam.bai",
+        fofn="fofn/{individual}.file.fofn",
     log:
-        "logs/merge_samples/{individual}_conditions_merged.log",
+        "logs/create_cluster_fofn/{individual}.file.fofn.log",
     threads: config.get("threads", 4)
     resources:
         runtime=530,
     benchmark:
-        "benchmark/merge_samples/{individual}_all_conditions_merged.txt"
+        "benchmark/create_cluster_fofn/{individual}.txt"
+    params:
+        tmp_base=tmp_base,
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        input_files=({input.bam})
-        num_files=${{#input_files[@]}}
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.create_cluster_fofn.{wildcards.individual}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
 
-        if [ $num_files -eq 1 ]; then
-            cp {input.bam} {output.bam}
-            samtools index -@ {threads} {output.bam}
-        else
-            samtools merge -@ {threads} --write-index \
-                {output.bam}##idx##{output.bai} {input.bam}
+        tmp_fofn="$tmpdir/file.fofn"
+
+        input_files=({input.bam})
+
+        if [ ${{#input_files[@]}} -eq 0 ]; then
+            echo "ERROR: No BAM files found for {wildcards.individual}" >&2
+            exit 1
         fi
+
+        printf "%s\n" "${{input_files[@]}}" > "$tmp_fofn"
+
+        echo "Wrote FOFN for {wildcards.individual}:"
+        cat "$tmp_fofn"
+
+        mkdir -p "$(dirname {output.fofn})"
+        mv "$tmp_fofn" {output.fofn}
         """
 
 
@@ -446,10 +565,9 @@ rule cluster:
     conda:
         "envs/env2.yml"
     input:
-        bam="merged/{individual}_all_conditions_merged.bam",
-        bai="merged/{individual}_all_conditions_merged.bam.bai",
+        fofn="fofn/{individual}.file.fofn",
     log:
-        "logs/cluster/{individual}_all_conditions_merged.log",
+        "logs/cluster/{individual}.log",
     output:
         clustered="clustered/{individual}_clustered.bam",
     threads: 20
@@ -457,13 +575,26 @@ rule cluster:
         runtime=2880,
         mem_mb=102400,
     benchmark:
-        "benchmark/cluster/{individual}_all_conditions.txt"
+        "benchmark/cluster/{individual}.txt"
+    params:
+        tmp_base=tmp_base,
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        isoseq cluster2 {input.bam} {output.clustered} -j {threads} --singletons
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.cluster.{wildcards.individual}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_clustered="$tmpdir/clustered.bam"
+
+        isoseq cluster2 {input.fofn} "$tmp_clustered" -j {threads} --singletons
+
+        samtools quickcheck "$tmp_clustered"
+
+        mkdir -p "$(dirname {output.clustered})"
+        mv "$tmp_clustered" {output.clustered}
         """
 
 
@@ -482,15 +613,27 @@ rule align:
         mem_mb=76800,
     params:
         reference=config["reference_genome"],
+        tmp_base=tmp_base,
     benchmark:
         "benchmark/align/{individual}_aligned.txt"
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        pbmm2 align {params.reference} {input} {output.aligned} \
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.align.{wildcards.individual}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_bam="$tmpdir/aligned.bam"
+
+        pbmm2 align {params.reference} {input} "$tmp_bam" \
             --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO
+
+        samtools quickcheck "$tmp_bam"
+
+        mkdir -p "$(dirname {output.aligned})"
+        mv "$tmp_bam" {output.aligned}
         """
 
 
@@ -509,15 +652,28 @@ rule label_transcripts:
     resources:
         runtime=530,
         mem_mb=10240,
+    params:
+        tmp_base=tmp_base,
     shell:
         r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.label_transcripts.{wildcards.individual}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_bam="$tmpdir/aligned_labeled.bam"
+
         (
             samtools view -@ {threads} -h {input.bam} \
-            | awk -v id={wildcards.individual} 'BEGIN {{OFS="\\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}'
-        ) | samtools view -@ {threads} -bS - > {output.bam}
+            | awk -v id={wildcards.individual} 'BEGIN {{OFS="\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}'
+        ) | samtools view -@ {threads} -bS - > "$tmp_bam"
+
+        samtools quickcheck "$tmp_bam"
+
+        mkdir -p "$(dirname {output.bam})"
+        mv "$tmp_bam" {output.bam}
         """
 
 
@@ -540,14 +696,29 @@ rule merge_all_aligned:
         mem_mb=10240,
     benchmark:
         "benchmark/merge_all_aligned/all_aligned_merged.txt"
+    params:
+        tmp_base=tmp_base,
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.merge_all_aligned.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_bam="$tmpdir/all_individuals_aligned_merged.bam"
+        tmp_bai="$tmpdir/all_individuals_aligned_merged.bam.bai"
+
         samtools merge \
             --write-index -@ {threads} \
-            {output.bam}##idx##{output.bai} {input} 
+            "$tmp_bam##idx##$tmp_bai" {input}
+
+        samtools quickcheck "$tmp_bam"
+
+        mkdir -p "$(dirname {output.bam})"
+        mv "$tmp_bam" {output.bam}
+        mv "$tmp_bai" {output.bai}
         """
 
 
@@ -570,13 +741,36 @@ rule collapse:
         mem_mb=20530,
     benchmark:
         "benchmark/collapse/collapse.txt"
+    params:
+        tmp_base=tmp_base,
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        isoseq collapse --do-not-collapse-extra-5exons --num-threads {threads} {input.bam} {output.collapsed_gff}
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.collapse.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_gff="$tmpdir/collapsed.gff"
+        tmp_abundance="$tmpdir/collapsed.abundance.txt"
+        tmp_readstat="$tmpdir/collapsed.read_stat.txt"
+        tmp_count="$tmpdir/collapsed.flnc_count.txt"
+
+        isoseq collapse --do-not-collapse-extra-5exons --num-threads {threads} {input.bam} "$tmp_gff"
+
+        test -s "$tmp_gff"
+        test -s "$tmp_abundance"
+        test -s "$tmp_readstat"
+        test -s "$tmp_count"
+
+        mkdir -p "$(dirname {output.collapsed_gff})"
+        mv "$tmp_gff" {output.collapsed_gff}
+        mv "$tmp_abundance" {output.collapsed_abundance}
+        mv "$tmp_readstat" {output.collapsed_readstat}
+        mv "$tmp_count" {output.collapsed_count}
         """
+
 
 rule pigeon_prepare_annot:
     conda:
@@ -591,6 +785,7 @@ rule pigeon_prepare_annot:
         prepared_collapsed_pgi="pigeon/collapsed.prepared.gff.pgi",
     params:
         script=workflow.source_path("scripts/clean_pigeon_gtf.awk"),
+        tmp_base=tmp_base,
     log:
         "logs/pigeon_prepare_annot/pigeon_prepare.log",
     benchmark:
@@ -600,10 +795,16 @@ rule pigeon_prepare_annot:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        mkdir -p annotations pigeon
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.pigeon_prepare_annot.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
 
-        raw_gtf="annotations/annotations.raw.gtf"
-        clean_gtf="annotations/annotations.clean.gtf"
+        tmp_annotations="$tmpdir/annotations"
+        tmp_pigeon="$tmpdir/pigeon"
+        mkdir -p "$tmp_annotations" "$tmp_pigeon"
+
+        raw_gtf="$tmp_annotations/annotations.raw.gtf"
+        clean_gtf="$tmp_annotations/annotations.clean.gtf"
 
         if file {input.gtf} | grep -q 'gzip compressed'; then
             gunzip -c {input.gtf} > "$raw_gtf"
@@ -614,16 +815,24 @@ rule pigeon_prepare_annot:
         awk -f {params.script} "$raw_gtf" > "$clean_gtf"
 
         pigeon prepare "$clean_gtf"
-        mv annotations/annotations.clean.sorted.gtf {output.gtf}
-        mv annotations/annotations.clean.sorted.gtf.pgi {output.pgi}
 
-        cp {input.collapsed_gff} pigeon/collapsed.prepared.gff
-        pigeon prepare pigeon/collapsed.prepared.gff
-        mv pigeon/collapsed.prepared.sorted.gff {output.prepared_collapsed}
-        mv pigeon/collapsed.prepared.sorted.gff.pgi {output.prepared_collapsed_pgi}
+        cp {input.collapsed_gff} "$tmp_pigeon/collapsed.prepared.gff"
+        pigeon prepare "$tmp_pigeon/collapsed.prepared.gff"
 
-        rm -f "$raw_gtf" "$clean_gtf"
+        test -s "$tmp_annotations/annotations.clean.sorted.gtf"
+        test -s "$tmp_annotations/annotations.clean.sorted.gtf.pgi"
+        test -s "$tmp_pigeon/collapsed.prepared.sorted.gff"
+        test -s "$tmp_pigeon/collapsed.prepared.sorted.gff.pgi"
+
+        mkdir -p "$(dirname {output.gtf})"
+        mkdir -p "$(dirname {output.prepared_collapsed})"
+
+        mv "$tmp_annotations/annotations.clean.sorted.gtf" {output.gtf}
+        mv "$tmp_annotations/annotations.clean.sorted.gtf.pgi" {output.pgi}
+        mv "$tmp_pigeon/collapsed.prepared.sorted.gff" {output.prepared_collapsed}
+        mv "$tmp_pigeon/collapsed.prepared.sorted.gff.pgi" {output.prepared_collapsed_pgi}
         """
+
 
 rule pigeon_process:
     conda:
@@ -634,13 +843,13 @@ rule pigeon_process:
         prepared_gtf="annotations/annotations.sorted.gtf",
         prepared_index="annotations/annotations.sorted.gtf.pgi",
     output:
-        # we no longer produce sorted.gff; classification and report remain
         classification="pigeon/pigeon_classification.txt",
         report="pigeon/saturation.txt",
     log:
         "logs/pigeon_process/pigeon_process.log",
     params:
         reference=config["reference_genome"],
+        tmp_base=tmp_base,
     benchmark:
         "benchmark/pigeon_process/pigeon.txt"
     threads: config.get("threads", 4)
@@ -648,17 +857,36 @@ rule pigeon_process:
         runtime=530,
         mem_mb=76800,
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        # Directly classify using the prepared collapsed GFF and prepared annotation
-        pigeon classify {input.prepared_collapsed} {input.prepared_gtf} {params.reference} \
-            --flnc {input.collapsed_count} -d pigeon -o 'pigeon'
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.pigeon_process.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
 
-        # Keep existing filter/report steps
-        pigeon filter {output.classification}
-        pigeon report pigeon/pigeon_classification.filtered_lite_classification.txt {output.report}
+        tmp_pigeon="$tmpdir/pigeon"
+        mkdir -p "$tmp_pigeon"
+
+        pigeon classify {input.prepared_collapsed} {input.prepared_gtf} {params.reference} \
+            --flnc {input.collapsed_count} -d "$tmp_pigeon" -o 'pigeon'
+
+        pigeon filter "$tmp_pigeon/pigeon_classification.txt"
+        pigeon report "$tmp_pigeon/pigeon_classification.filtered_lite_classification.txt" "$tmp_pigeon/saturation.txt"
+
+        test -s "$tmp_pigeon/pigeon_classification.txt"
+        test -s "$tmp_pigeon/saturation.txt"
+
+        mkdir -p "$(dirname {output.classification})"
+        mv "$tmp_pigeon/pigeon_classification.txt" {output.classification}
+        mv "$tmp_pigeon/saturation.txt" {output.report}
+
+        # Preserve filtered outputs if Pigeon produced them.
+        for f in "$tmp_pigeon"/pigeon_classification.filtered*; do
+            if [ -e "$f" ]; then
+                mv "$f" "$(dirname {output.classification})/"
+            fi
+        done
         """
 
 
@@ -681,12 +909,25 @@ rule create_dictionary:
         mem_mb=374000,
     params:
         script=workflow.source_path("scripts/create_dictionary.R"),
+        tmp_base=tmp_base,
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        Rscript {params.script} {input.collapsed} whatshap/ {input.classification} {threads} tag
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.create_dictionary.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_tag="$tmpdir/tag"
+        mkdir -p "$tmp_tag"
+
+        Rscript {params.script} {input.collapsed} whatshap/ {input.classification} {threads} "$tmp_tag"
+
+        test -s "$tmp_tag/dictionary.tsv.gz"
+
+        mkdir -p "$(dirname {output})"
+        mv "$tmp_tag/dictionary.tsv.gz" {output}
         """
 
 
@@ -709,12 +950,30 @@ rule add_tags_to_bam:
         mem_mb=20530,
     params:
         script=workflow.source_path("scripts/add_tags_to_bam.sh"),
+        tmp_base=tmp_base,
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        bash {params.script} {input.bam} {input.dictionary} {output.bam} {threads}
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.add_tags_to_bam.{wildcards.individual}.{wildcards.condition}.{wildcards.label}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_bam="$tmpdir/tagged.bam"
+        tmp_bai="$tmpdir/tagged.bam.bai"
+
+        bash {params.script} {input.bam} {input.dictionary} "$tmp_bam" {threads}
+
+        if [ ! -s "$tmp_bai" ]; then
+            samtools index -@ {threads} "$tmp_bam" "$tmp_bai"
+        fi
+
+        samtools quickcheck "$tmp_bam"
+
+        mkdir -p "$(dirname {output.bam})"
+        mv "$tmp_bam" {output.bam}
+        mv "$tmp_bai" {output.bai}
         """
 
 
@@ -731,14 +990,31 @@ rule qc_flnc:
     params:
         output_dir="qc/{individual}_{condition}_{label}_plots",
         script=workflow.source_path("scripts/qc_metrics.py"),
+        tmp_base=tmp_base,
     benchmark:
         "benchmark/qc_flnc/{individual}_{condition}_{label}_qc.txt"
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        python {params.script} {input.bam} {output.tsv} {params.output_dir}
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.qc_flnc.{wildcards.individual}.{wildcards.condition}.{wildcards.label}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_tsv="$tmpdir/qc_summary.tsv"
+        tmp_plots="$tmpdir/plots"
+
+        python {params.script} {input.bam} "$tmp_tsv" "$tmp_plots"
+
+        test -s "$tmp_tsv"
+        test -d "$tmp_plots"
+
+        mkdir -p "$(dirname {output.tsv})"
+        rm -rf {output.plots_dir}
+
+        mv "$tmp_tsv" {output.tsv}
+        mv "$tmp_plots" {output.plots_dir}
         """
 
 
@@ -778,12 +1054,20 @@ rule isoranker_analysis:
     params:
         output_dir=lambda wildcards, output: os.path.commonpath(list(output)),
         ref_fa=reference_genome,
+        tmp_base=tmp_base,
     conda:
         "envs/isoranker.yml"
     shell:
-        """
+        r"""
         exec &> >(tee -a {log})
         set -euo pipefail
+
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.isoranker_analysis.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_output_dir="$tmpdir/isoranker_output"
+        mkdir -p "$tmp_output_dir"
 
         isoranker_pb_run_analysis \
           --read_stat_path {input.read_stat} \
@@ -794,5 +1078,30 @@ rule isoranker_analysis:
           --hpo_file_path {input.hpo_file} \
           --probands_file_path {input.probands_file} \
           --gtf_path_input {input.gtf_file} \
-          --final_output_dir {params.output_dir}
+          --final_output_dir "$tmp_output_dir"
+
+        test -s "$tmp_output_dir/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz"
+        test -s "$tmp_output_dir/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz"
+        test -s "$tmp_output_dir/browser/lookup_tables/gene_coverage_lookup_table.tsv.gz"
+        test -s "$tmp_output_dir/browser/lookup_tables/sample_gene_rankings_lookup_table.tsv.gz"
+        test -s "$tmp_output_dir/intermediate/merged_ranked_gene.tsv.gz"
+        test -s "$tmp_output_dir/intermediate/merged_ranked_isoform.tsv.gz"
+        test -s "$tmp_output_dir/qc/gene_diversity.tsv.gz"
+        test -s "$tmp_output_dir/qc/isoform_diversity.tsv.gz"
+        test -s "$tmp_output_dir/qc/pca_plot.pdf"
+
+        mkdir -p "$(dirname {output.gene_with_phenotype})"
+        mkdir -p "$(dirname {output.gene_lookup})"
+        mkdir -p "$(dirname {output.merged_gene})"
+        mkdir -p "$(dirname {output.gene_div})"
+
+        mv "$tmp_output_dir/browser/combined_results/merged_ranked_gene_with_phenotype.tsv.gz" {output.gene_with_phenotype}
+        mv "$tmp_output_dir/browser/combined_results/merged_ranked_isoform_with_phenotype.tsv.gz" {output.isoform_with_phenotype}
+        mv "$tmp_output_dir/browser/lookup_tables/gene_coverage_lookup_table.tsv.gz" {output.gene_lookup}
+        mv "$tmp_output_dir/browser/lookup_tables/sample_gene_rankings_lookup_table.tsv.gz" {output.ranking_lookup}
+        mv "$tmp_output_dir/intermediate/merged_ranked_gene.tsv.gz" {output.merged_gene}
+        mv "$tmp_output_dir/intermediate/merged_ranked_isoform.tsv.gz" {output.merged_isoform}
+        mv "$tmp_output_dir/qc/gene_diversity.tsv.gz" {output.gene_div}
+        mv "$tmp_output_dir/qc/isoform_diversity.tsv.gz" {output.isoform_div}
+        mv "$tmp_output_dir/qc/pca_plot.pdf" {output.pca_plot}
         """
