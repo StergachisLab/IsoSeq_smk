@@ -188,7 +188,7 @@ rule merge_individual_condition:
             samtools merge -@ {threads} "$tmp_bam" {input}
         fi
 
-        samtools quickcheck "$tmp_bam"
+        samtools quickcheck -u "$tmp_bam"
 
         mkdir -p "$(dirname {output.bam})"
         mv "$tmp_bam" {output.bam}
