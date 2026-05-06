@@ -298,7 +298,7 @@ rule label_reads_with_condition:
         | awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\t"}} /^@/ {{print; next}} {{$1=id"_"$1; print}}' \
         | samtools view -@ {threads} -b -o "$tmp_bam" -
 
-        samtools quickcheck "$tmp_bam"
+        samtools quickcheck -u "$tmp_bam"
 
         mkdir -p "$(dirname {output.bam})"
         mv "$tmp_bam" {output.bam}
@@ -638,7 +638,7 @@ rule cluster:
 
         isoseq cluster2 {input.fofn} "$tmp_clustered" -j {threads} --singletons
 
-        samtools quickcheck "$tmp_clustered"
+        samtools quickcheck -u "$tmp_clustered"
 
         mkdir -p "$(dirname {output.clustered})"
         mv "$tmp_clustered" {output.clustered}
