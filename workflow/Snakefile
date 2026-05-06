@@ -519,18 +519,27 @@ rule label_transcripts:
     resources:
         runtime=530,
         mem_mb=10240,
+    params:
+        tmp_base=tmp_base,
     shell:
         r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        mkdir -p "$(dirname {output.bam})"
+        mkdir -p "{params.tmp_base}"
+        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.label_transcripts.{wildcards.individual}.XXXXXX")
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        tmp_bam="$tmpdir/aligned_labeled.bam"
 
         samtools view -@ {threads} -h {input.bam} \
-        | awk -v id="{wildcards.individual}" 'BEGIN {OFS="\t"} /^@/ {print; next} {$1=id"_"$1; print}' \
-        | samtools view -@ {threads} -b -o {output.bam} -
+        | awk -v id="{wildcards.individual}" 'BEGIN {{OFS="\t"}} /^@/ {{print; next}} {{$1=id"_"$1; print}}' \
+        | samtools view -@ {threads} -b -o "$tmp_bam" -
 
-        samtools quickcheck {output.bam}
+        samtools quickcheck "$tmp_bam"
+
+        mkdir -p "$(dirname {output.bam})"
+        mv "$tmp_bam" {output.bam}
         """
 
 rule merge_all_aligned:
