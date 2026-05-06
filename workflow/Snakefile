@@ -188,8 +188,6 @@ rule merge_individual_condition:
             samtools merge -@ {threads} "$tmp_bam" {input}
         fi
 
-        samtools quickcheck -u "$tmp_bam"
-
         mkdir -p "$(dirname {output.bam})"
         mv "$tmp_bam" {output.bam}
 
@@ -259,8 +257,6 @@ rule downsample_individual_condition:
             samtools index -@ {threads} "$tmp_bam" "$tmp_bai"
         fi
 
-        samtools quickcheck -u "$tmp_bam"
-
         mkdir -p "$(dirname {output.bam})"
         mv "$tmp_bam" {output.bam}
         mv "$tmp_bai" {output.bai}
@@ -297,8 +293,6 @@ rule label_reads_with_condition:
         samtools view -@ {threads} -h {input.bam} \
         | awk -v id="{wildcards.individual}_{wildcards.condition}_{wildcards.label}" 'BEGIN {{OFS="\t"}} /^@/ {{print; next}} {{$1=id"_"$1; print}}' \
         | samtools view -@ {threads} -b -o "$tmp_bam" -
-
-        samtools quickcheck -u "$tmp_bam"
 
         mkdir -p "$(dirname {output.bam})"
         mv "$tmp_bam" {output.bam}
@@ -637,8 +631,6 @@ rule cluster:
         tmp_clustered="$tmpdir/clustered.bam"
 
         isoseq cluster2 {input.fofn} "$tmp_clustered" -j {threads} --singletons
-
-        samtools quickcheck -u "$tmp_clustered"
 
         mkdir -p "$(dirname {output.clustered})"
         mv "$tmp_clustered" {output.clustered}
