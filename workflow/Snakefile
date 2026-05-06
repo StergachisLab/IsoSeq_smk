@@ -524,12 +524,14 @@ rule label_transcripts:
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        (
-            samtools view -@ {threads} -h {input.bam} \
-            | awk -v id={wildcards.individual} 'BEGIN {{OFS="\\t"}} !/^@/ {{$1=id"_"$1; print}} /^@/ {{print}}'
-        ) | samtools view -@ {threads} -bS - > {output.bam}
-        """
+        mkdir -p "$(dirname {output.bam})"
 
+        samtools view -@ {threads} -h {input.bam} \
+        | awk -v id="{wildcards.individual}" 'BEGIN {OFS="\t"} /^@/ {print; next} {$1=id"_"$1; print}' \
+        | samtools view -@ {threads} -b -o {output.bam} -
+
+        samtools quickcheck {output.bam}
+        """
 
 rule merge_all_aligned:
     conda:
