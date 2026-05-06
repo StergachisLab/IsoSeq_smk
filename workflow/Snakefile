@@ -410,7 +410,6 @@ rule extract_read_info:
         python {params.script} {input.bam} {output.txt}
         """
 
-
 rule create_cluster_fofn:
     conda:
         "envs/env.yml"
@@ -453,7 +452,6 @@ rule create_cluster_fofn:
         echo "Wrote absolute-path FOFN for {wildcards.individual}: {output.fofn}"
         cat {output.fofn}
         """
-
 
 rule cluster:
     conda:
