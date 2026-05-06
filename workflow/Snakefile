@@ -954,25 +954,16 @@ rule create_dictionary:
         mem_mb=374000,
     params:
         script=workflow.source_path("scripts/create_dictionary.R"),
-        tmp_base=tmp_base,
     shell:
         r"""
         exec &> >(tee -a {log})
         set -euo pipefail
 
-        mkdir -p "{params.tmp_base}"
-        tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.create_dictionary.XXXXXX")
-        trap 'rm -rf "$tmpdir"' EXIT
+        mkdir -p tag
 
-        tmp_tag="$tmpdir/tag"
-        mkdir -p "$tmp_tag"
+        Rscript {params.script} {input.collapsed} whatshap/ {input.classification} {threads} tag
 
-        Rscript {params.script} {input.collapsed} whatshap/ {input.classification} {threads} "$tmp_tag"
-
-        test -s "$tmp_tag/dictionary.tsv.gz"
-
-        mkdir -p "$(dirname {output})"
-        mv "$tmp_tag/dictionary.tsv.gz" {output}
+        test -s {output}
         """
 
 
