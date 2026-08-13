@@ -7,8 +7,8 @@ default-resources:
   - disk_mb=8096
   - mem_mb=10000
   - runtime=1200
-  - slurm_partition=cpu-g2-stergachislab
-  - slurm_account=stergachislab
+  - slurm_partition=cpu-g2
+  - slurm_account=cpu-g2-stergachislab
 use-conda: true
 conda-frontend: conda
 rerun-incomplete: true
