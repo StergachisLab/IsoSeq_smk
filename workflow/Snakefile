@@ -323,6 +323,8 @@ rule align_sample:
         exec &> >(tee -a {log})
         set -euo pipefail
 
+        job_id="${{SLURM_JOB_ID:-local}}"
+
         mkdir -p "{params.tmp_base}"
         tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.align_sample.{wildcards.individual}.{wildcards.condition}.{wildcards.label}.XXXXXX")
         trap 'rm -rf "$tmpdir"' EXIT
