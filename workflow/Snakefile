@@ -327,11 +327,19 @@ rule align_sample:
         tmpdir=$(mktemp -d "{params.tmp_base}/snakemake.align_sample.{wildcards.individual}.{wildcards.condition}.{wildcards.label}.XXXXXX")
         trap 'rm -rf "$tmpdir"' EXIT
 
+        export TMPDIR="$tmpdir"
         tmp_bam="$tmpdir/aligned.bam"
         tmp_bai="$tmpdir/aligned.bam.bai"
 
+        echo "SLURM job: $job_id"
+        echo "Node: $(hostname)"
+        echo "Working directory: $(pwd)"
+        echo "Temporary directory: $tmpdir"
+        echo "Filesystem:"
+        df -hT "$tmpdir"
+
         pbmm2 align \
-            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level INFO \
+            --preset ISOSEQ --sort -j {threads} --sort-memory 4G --log-level DEBUG \
             {input.reference} {input.bam} "$tmp_bam"
 
         samtools index -@ {threads} "$tmp_bam" "$tmp_bai"
